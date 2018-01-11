@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Include=".gitignore" />
+    <None Include="README.md" />
+    <None Include="weather-icons.ai" />
+    <None Include="weather-icons.r">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="weather-icons-bw.r">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="size.r">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="IconListDef.r" />
+    <None Include="Facebook.r">
+      <Filter>Modules</Filter>
+    </None>
+    <None Include="Prefs.r">
+      <Filter>Resources</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Modules">
+      <UniqueIdentifier>{d9714ac5-5bc8-4b4d-84d5-5d4ad6bf73a5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{5f318107-498a-4c22-801c-202274f5952d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MacHub.cpp" />
+    <ClCompile Include="Util.cpp" />
+    <ClCompile Include="Prefs.cpp" />
+    <ClCompile Include="IconListDef.cpp" />
+    <ClCompile Include="Weather.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Facebook.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="ModuleManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Module.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Util.h" />
+    <ClInclude Include="Prefs.h" />
+    <ClInclude Include="Weather.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Facebook.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="IconListDef.h" />
+    <ClInclude Include="ModuleManager.h" />
+  </ItemGroup>
+</Project>
