@@ -1,7 +1,7 @@
 #include <string.h>
 #include <Gestalt.h>
 #include <QuickDraw.h>
-
+#include <FixMath.h>
 #include "Util.h"
 
 #define kTwoPower32 (4294967296.0)      /* 2^32 */
@@ -58,4 +58,46 @@ bool Util::HasColour()
 	}
 
 	return false;
+}
+
+void Util::DrawTextToWidth(std::string text, int width, int lineHeight, int newLineHPos)
+{
+	const char* cText = text.c_str();
+	long textLen = strlen(cText);
+	long textStart = 0;
+	long textOffset = 1;
+	Fixed widthPixels = Long2Fix(width);
+	Fixed textWidth;
+	StyledLineBreakCode ans;
+	Ptr textPtr;
+	Point curPos;
+
+	GetPen(&curPos);
+
+	if (newLineHPos > -1)
+	{
+		curPos.h = newLineHPos;
+	}
+
+	while (true)
+	{
+		textPtr = (char*)&cText[textStart];
+		textWidth = widthPixels;
+
+		ans = StyledLineBreak(textPtr, textLen, 0, textLen, 0, &textWidth, &textOffset);
+
+		MacDrawText(cText, textStart, textOffset);
+
+		if (ans == smBreakOverflow)
+		{
+			break;
+		}
+
+		textStart += textOffset;
+		textLen -= textOffset;
+		textOffset = 0; // Always 0 after first call
+
+		curPos.v += lineHeight;
+		MoveTo(curPos.h, curPos.v);
+	}
 }

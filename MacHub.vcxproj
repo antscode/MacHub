@@ -102,13 +102,13 @@ xcopy *.APPL "C:\Users\AnthonySuper\OneDrive\Documents\Personal\Mac\Apps\Basilis
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Facebook.cpp" />
     <ClCompile Include="IconListDef.cpp" />
     <ClCompile Include="MacHub.cpp" />
     <ClCompile Include="ModuleManager.cpp" />
+    <ClCompile Include="Modules\Facebook.cpp" />
+    <ClCompile Include="Modules\Weather.cpp" />
     <ClCompile Include="Prefs.cpp" />
     <ClCompile Include="Util.cpp" />
-    <ClCompile Include="Weather.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
@@ -122,13 +122,13 @@ xcopy *.APPL "C:\Users\AnthonySuper\OneDrive\Documents\Personal\Mac\Apps\Basilis
     <None Include="weather-icons.r" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Facebook.h" />
     <ClInclude Include="IconListDef.h" />
-    <ClInclude Include="Module.h" />
     <ClInclude Include="ModuleManager.h" />
+    <ClInclude Include="Modules\Facebook.h" />
+    <ClInclude Include="Modules\Module.h" />
+    <ClInclude Include="Modules\Weather.h" />
     <ClInclude Include="Prefs.h" />
     <ClInclude Include="Util.h" />
-    <ClInclude Include="Weather.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

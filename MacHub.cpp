@@ -5,16 +5,10 @@
 #include <Resources.h>
 #include <Sound.h>
 #include <memory>
-
-
 #include "ModuleManager.h"
-
-
-#include "Weather.h"
-#include "Facebook.h"
 #include "Prefs.h"
-
-
+#include "Modules/Weather.h"
+#include "Modules/Facebook.h"
 
 void InitToolBox();
 void InitModules();

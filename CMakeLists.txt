@@ -8,17 +8,15 @@ add_application(MacHub
 	size.r
 	weather-icons.r
 	weather-icons-bw.r
-	Weather.cpp
-	Module.h
-	Facebook.cpp
 	Facebook.r
-	Util.h
 	Util.cpp
 	Prefs.cpp
 	Prefs.h
 	Prefs.r
 	IconListDef.cpp
 	ModuleManager.cpp
+	Modules/Facebook.cpp
+	Modules/Weather.cpp
 )
 
 target_link_libraries(MacHub MacHTTP mbedtls mbedx509 mbedcrypto MacTCPHelper jsoncpp)

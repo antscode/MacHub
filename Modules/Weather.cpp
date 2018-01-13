@@ -4,9 +4,9 @@
 #include <string>
 #include <sstream>
 #include <machttp/HttpClient.h>
-#include "Util.h"
-#include "Weather.h"
 #include <json/json.h>
+#include "../Util.h"
+#include "Weather.h"
 
 Weather::Weather()
 {

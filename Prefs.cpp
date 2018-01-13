@@ -10,7 +10,6 @@
 #include <Quickdraw.h>
 #include <string>
 #include "Prefs.h"
-#include "Facebook.h"
 #include "Util.h"
 
 

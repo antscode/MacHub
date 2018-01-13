@@ -14,12 +14,10 @@
       <Filter>Resources</Filter>
     </None>
     <None Include="IconListDef.r" />
-    <None Include="Facebook.r">
-      <Filter>Modules</Filter>
-    </None>
     <None Include="Prefs.r">
       <Filter>Resources</Filter>
     </None>
+    <None Include="Facebook.r" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
@@ -37,27 +35,27 @@
     <ClCompile Include="Util.cpp" />
     <ClCompile Include="Prefs.cpp" />
     <ClCompile Include="IconListDef.cpp" />
-    <ClCompile Include="Weather.cpp">
-      <Filter>Modules</Filter>
-    </ClCompile>
-    <ClCompile Include="Facebook.cpp">
-      <Filter>Modules</Filter>
-    </ClCompile>
     <ClCompile Include="ModuleManager.cpp" />
+    <ClCompile Include="Modules\Weather.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Facebook.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Module.h">
-      <Filter>Modules</Filter>
-    </ClInclude>
     <ClInclude Include="Util.h" />
     <ClInclude Include="Prefs.h" />
-    <ClInclude Include="Weather.h">
-      <Filter>Modules</Filter>
-    </ClInclude>
-    <ClInclude Include="Facebook.h">
-      <Filter>Modules</Filter>
-    </ClInclude>
     <ClInclude Include="IconListDef.h" />
     <ClInclude Include="ModuleManager.h" />
+    <ClInclude Include="Modules\Weather.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Facebook.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Module.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

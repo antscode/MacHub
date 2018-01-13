@@ -1,9 +1,11 @@
 #include <Dialogs.h>
+#include <string.h>
 #include <machttp/HttpClient.h>
 #include <Timer.h>
-#include "Facebook.h"
-#include "Util.h"
 #include <json/json.h>
+#include "Facebook.h"
+#include "../Util.h"
+
 
 
 bool poll = false, pollComplete = false;
@@ -43,8 +45,8 @@ void Facebook::ShowPrefsDialog()
 	PrefsDialog = GetNewDialog(129, 0, (WindowPtr)-1);
 	MacSetPort(PrefsDialog);
 
-	TextSize(10);
-	MoveTo(10, 10);
+	TextSize(0);
+	MoveTo(10, 20);
 
 	DrawString("\pContacting Facebook, please wait...");
 
@@ -64,8 +66,7 @@ void Facebook::ShowPrefsDialog()
 	std::string userCode = root["user_code"].asString();
 
 	EraseRect(&PrefsDialog->portRect);
-	TextSize(10);
-	MoveTo(10, 10);
+	MoveTo(10, 20);
 
 	DrawString("\pVisit ");
 
@@ -73,14 +74,28 @@ void Facebook::ShowPrefsDialog()
 	DrawString("\pfacebook.com/device ");
 
 	ForeColor(blackColor);
-	DrawString("\pon your smartphone and enter this code:");
+	
+	Point curPos;
+	GetPen(&curPos);
+	int maxWidth = PrefsDialog->portRect.right - curPos.h;
 
-	MoveTo(50, 50);
+	Util::DrawTextToWidth("on your smartphone and enter this code:", maxWidth, 15, 10);
+
+	GetPen(&curPos);
 	TextSize(24);
 
 	const char* cUserCode = userCode.c_str();
 	char* pUserCode = (char*)Util::CtoPStr((char*)cUserCode);
+
+	short strWidth;
+	strWidth = StringWidth((ConstStr255Param)pUserCode);
+	int centrePos = (PrefsDialog->portRect.right - strWidth) / 2;
+
+	MoveTo(centrePos, curPos.v + 34);
+
 	DrawString((ConstStr255Param)pUserCode);
+
+	TextSize(0);
 }
 
 void Facebook::HandlePrefsDialogEvent(EventRecord *eventPtr)
