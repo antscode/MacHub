@@ -13,6 +13,7 @@ public:
 	virtual void Init() = 0;
 	virtual void Update() = 0;
 	virtual void ShowPrefsDialog() = 0;
+	virtual void UpdatePrefsDialog() = 0;
 	virtual void HandlePrefsDialogEvent(EventRecord *eventPtr) = 0;
 };
 

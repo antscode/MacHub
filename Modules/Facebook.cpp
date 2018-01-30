@@ -1,24 +1,9 @@
 #include <Dialogs.h>
 #include <string.h>
 #include <machttp/HttpClient.h>
-#include <Timer.h>
 #include <json/json.h>
 #include "Facebook.h"
 #include "../Util.h"
-
-
-
-bool poll = false, pollComplete = false;
-UnsignedWide lastPoll;
-UnsignedWide now;
-double pollInterval = (5 * 1000000);
-double lastPollTime = 0, currentTime;
-std::string accessToken = "246689145865793|e94f495fbf957ec7832a41bb8d274609";
-std::string code;
-
-Facebook::Facebook()
-{
-}
 
 std::string Facebook::GetId()
 {
@@ -45,10 +30,8 @@ void Facebook::ShowPrefsDialog()
 	PrefsDialog = GetNewDialog(129, 0, (WindowPtr)-1);
 	MacSetPort(PrefsDialog);
 
-	TextSize(0);
-	MoveTo(10, 20);
-
-	DrawString("\pContacting Facebook, please wait...");
+	_uiState = PleaseWait;
+	UpdateUI();
 
 	HttpClient httpClient("https://graph.facebook.com");
 
@@ -56,46 +39,80 @@ void Facebook::ShowPrefsDialog()
 	httpClient.SetCipherSuite(MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA);
 
 	HttpResponse response = httpClient.Post("/v2.6/device/login",
-		"access_token=" + accessToken + "&scope=user_posts");
+		"access_token=" + _accessToken + "&scope=user_posts");
 
 	Json::Value root;
 	Json::Reader reader;
 	bool parsingSuccessful = reader.parse(response.Content.c_str(), root);
 
-	code = root["code"].asString();
-	std::string userCode = root["user_code"].asString();
+	_code = root["code"].asString();
+	_userCode = root["user_code"].asString();
 
-	EraseRect(&PrefsDialog->portRect);
-	MoveTo(10, 20);
+	_uiState = EnterCode;
+	UpdateUI();
+}
 
-	DrawString("\pVisit ");
+void Facebook::UpdateUI()
+{
+	MacSetPort(PrefsDialog);
 
-	ForeColor(blueColor);
-	DrawString("\pfacebook.com/device ");
+	switch (_uiState)
+	{
+		case PleaseWait:
+			Util::FrameDefaultButton(PrefsDialog, 2, false);
 
-	ForeColor(blackColor);
-	
-	Point curPos;
-	GetPen(&curPos);
-	int maxWidth = PrefsDialog->portRect.right - curPos.h;
+			TextSize(0);
+			MoveTo(10, 20);
+			EraseStatusText();
 
-	Util::DrawTextToWidth("on your smartphone and enter this code:", maxWidth, 15, 10);
+			DrawString("\pContacting Facebook, please wait...");
+			UpdateDialog(PrefsDialog, PrefsDialog->visRgn);
+			break;
 
-	GetPen(&curPos);
-	TextSize(24);
+		case EnterCode:
+			Util::FrameDefaultButton(PrefsDialog, 2, true);
 
-	const char* cUserCode = userCode.c_str();
-	char* pUserCode = (char*)Util::CtoPStr((char*)cUserCode);
+			MoveTo(10, 20);
+			EraseStatusText();
 
-	short strWidth;
-	strWidth = StringWidth((ConstStr255Param)pUserCode);
-	int centrePos = (PrefsDialog->portRect.right - strWidth) / 2;
+			DrawString("\pVisit ");
 
-	MoveTo(centrePos, curPos.v + 34);
+			ForeColor(blueColor);
+			DrawString("\pfacebook.com/device ");
 
-	DrawString((ConstStr255Param)pUserCode);
+			ForeColor(blackColor);
 
-	TextSize(0);
+			Point curPos;
+			GetPen(&curPos);
+			int maxWidth = PrefsDialog->portRect.right - curPos.h;
+
+			Util::DrawTextToWidth("on your smartphone and enter this code:", maxWidth, 15, 10);
+
+			GetPen(&curPos);
+			TextSize(24);
+
+			std::string userCode = _userCode.c_str();
+			const char* cUserCode = userCode.c_str();
+			char* pUserCode = (char*)Util::CtoPStr((char*)cUserCode);
+
+			short strWidth;
+			strWidth = StringWidth((ConstStr255Param)pUserCode);
+			int centrePos = (PrefsDialog->portRect.right - strWidth) / 2;
+
+			MoveTo(centrePos, curPos.v + 34);
+			DrawString((ConstStr255Param)pUserCode);
+			UpdateDialog(PrefsDialog, PrefsDialog->visRgn);
+
+			TextSize(0);
+			break;
+	}
+}
+
+void Facebook::UpdatePrefsDialog()
+{
+	BeginUpdate(PrefsDialog);
+	UpdateUI();
+	EndUpdate(PrefsDialog);
 }
 
 void Facebook::HandlePrefsDialogEvent(EventRecord *eventPtr)
@@ -115,19 +132,19 @@ void Facebook::HandlePrefsDialogEvent(EventRecord *eventPtr)
 				CheckUserCode();
 				break;
 		}
-
 	}
 }
 
 void Facebook::CheckUserCode()
 {
-	MacSetPort(PrefsDialog);
+	_uiState = PleaseWait;
+	UpdateUI();
 
 	HttpClient httpClient("https://graph.facebook.com");
 	httpClient.SetCipherSuite(MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA);
 
 	HttpResponse response = httpClient.Post("/v2.6/device/login_status",
-		"access_token=" + accessToken + "&code=" + code);
+		"access_token=" + _accessToken + "&code=" + _code);
 
 	Json::Value root;
 	Json::Reader reader;
@@ -136,46 +153,9 @@ void Facebook::CheckUserCode()
 	if (root.isMember("access_token"))
 	{
 		// Save access token to prefs
-		// TODO
-
 		std::string userAccessToken = root["access_token"].asString();
-		response = httpClient.Get("/v2.3/me?fields=name,picture&access_token=" + userAccessToken);
 
-		parsingSuccessful = reader.parse(response.Content.c_str(), root);
-
-		std::string userName = root["name"].asString();
-		std::string message = userName + " is connected.";
-
-		Rect pictRect;
-		PicHandle picture;
-		int successIcon = 132;
-		if (!Util::HasColour())
-		{
-			successIcon = 133;
-		}
-
-		picture = GetPicture(successIcon);
-		pictRect = (**(picture)).picFrame;
-
-		MacSetRect(&pictRect, 20, 20, 52, 52);
-		DrawPicture(picture, &pictRect);
-
-		TextSize(10);
-		MoveTo(20, 72);
-
-		const char* cMsg = message.c_str();
-		char* pMsg = (char*)Util::CtoPStr((char*)cMsg);
-		DrawString((ConstStr255Param)pMsg);
-
-
-
-		/*DialogItemType type;
-		Handle itemH;
-		Rect box;
-
-		GetDialogItem(dialogPtr, 1, &type, &itemH, &box);
-		SetControlTitle((ControlHandle)itemH, "\pContinue");*/
-
+		DisposeDialog(PrefsDialog);
 	}
 	else if (root.isMember("error"))
 	{
@@ -183,9 +163,28 @@ void Facebook::CheckUserCode()
 
 		int resCode = error["code"].asInt();
 
-		if (resCode != 31) // 31 = not yet confirmed by user
+		if (resCode == 31) // 31 = not yet confirmed by user
 		{
-			// Something went wrong
+			NoteAlert(130, nil);
 		}
+		else
+		{
+			StopAlert(131, nil);
+		}
+
+		_uiState = EnterCode;
+		UpdateUI();
 	}
+}
+
+void Facebook::EraseStatusText()
+{
+	Rect rect;
+	MacSetRect(&rect,
+		PrefsDialog->portRect.left,
+		PrefsDialog->portRect.top,
+		PrefsDialog->portRect.right,
+		PrefsDialog->portRect.bottom - 40);
+
+	EraseRect(&rect);
 }

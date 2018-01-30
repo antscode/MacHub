@@ -97,6 +97,11 @@ void Weather::ShowPrefsDialog()
 	// TODO
 }
 
+void Weather::UpdatePrefsDialog()
+{
+	// TODO
+}
+
 void Weather::HandlePrefsDialogEvent(EventRecord *eventPtr)
 {
 	// TODO

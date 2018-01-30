@@ -57,8 +57,14 @@ void ModuleManager::HandleUpdate(EventRecord *eventPtr)
 	}
 	else
 	{
-		// TODO: This should be calling update of whatever module window is active
-		DialogSelect(eventPtr, &dialogRef, &itemHit);
+		for (std::vector<std::unique_ptr<Module>>::iterator it = Modules.begin(); it != Modules.end(); ++it)
+		{
+			if (windowPtr == (*it)->PrefsDialog)
+			{
+				(*it)->UpdatePrefsDialog();
+				break;
+			}
+		}
 	}
 }
 

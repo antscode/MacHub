@@ -101,3 +101,37 @@ void Util::DrawTextToWidth(std::string text, int width, int lineHeight, int newL
 		MoveTo(curPos.h, curPos.v);
 	}
 }
+
+void Util::FrameDefaultButton(DialogPtr dialog, short itemNo, bool active)
+{
+	DialogItemType type;
+	Handle itemH;
+	Rect box;
+
+	GetDialogItem(dialog, itemNo, &type, &itemH, &box);
+	InsetRect(&box, -4, -4);
+	PenSize(3, 3);
+
+	if (!active)
+	{
+		RGBColor color;
+		PixPatHandle pp;
+
+		color.red = 0x8000;
+		color.green = 0x8000;
+		color.blue = 0x8000;
+
+		pp = NewPixPat();
+		MakeRGBPat(pp, &color);
+		PenPixPat(pp);
+		FrameRoundRect(&box, 16, 16);
+		DisposePixPat(pp);
+		PenNormal();
+		DeactivateControl((ControlRef)itemH);
+	}
+	else
+	{
+		FrameRoundRect(&box, 16, 16);
+		ActivateControl((ControlRef)itemH);
+	}
+}
