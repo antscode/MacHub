@@ -4,6 +4,7 @@
 #include <json/json.h>
 #include "Facebook.h"
 #include "../Util.h"
+#include "../Prefs.h"
 
 std::string Facebook::GetId()
 {
@@ -148,12 +149,26 @@ void Facebook::CheckUserCode()
 
 	Json::Value root;
 	Json::Reader reader;
-	bool parsingSuccessful = reader.parse(response.Content.c_str(), root);
+	bool parseSuccess = reader.parse(response.Content.c_str(), root);
 
-	if (root.isMember("access_token"))
+	if (parseSuccess && root.isMember("access_token"))
 	{
 		// Save access token to prefs
 		std::string userAccessToken = root["access_token"].asString();
+
+		// Get FB username to save to prefs
+		response = httpClient.Get("/v2.3/me?fields=name,picture&access_token=" + userAccessToken);
+		parsingSuccessful = reader.parse(response.Content.c_str(), root);
+		std::string username = root["name"].asString();
+
+		Json::Value fbAccount;
+
+		fbAccount["type"] = "facebook";
+		fbAccount["name"] = username;
+		fbAccount["access_token"] = userAccessToken;
+
+		Prefs::Data["accounts"].append(fbAccount);
+		Prefs::Save();
 
 		DisposeDialog(PrefsDialog);
 	}

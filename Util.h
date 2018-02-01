@@ -11,4 +11,5 @@ public:
 	static bool HasColour();
 	static void DrawTextToWidth(std::string text, int width, int lineHeight, int newLineHPos = -1);
 	static void FrameDefaultButton(DialogPtr dialog, short itemNo, bool active);
+	static void DebugStr(std::string msg);
 };

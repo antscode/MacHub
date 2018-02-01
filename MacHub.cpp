@@ -157,7 +157,6 @@ void HandleInContent(EventRecord *eventPtr)
 		else
 		{
 			_manager.HandleEvent(eventPtr);
-			
 		}
 	}
 }

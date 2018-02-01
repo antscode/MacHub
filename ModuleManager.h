@@ -12,6 +12,7 @@ public:
 	std::vector<std::unique_ptr<Module>> Modules;
 	void Init();
 	void HandleEvent(EventRecord *eventPtr);
+	std::string GetModuleName(std::string moduleId);
 private:
 	void HandleMouseDown(EventRecord *eventPtr);
 	void HandleUpdate(EventRecord *eventPtr);

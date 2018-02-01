@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdio.h>
 #include <Gestalt.h>
 #include <QuickDraw.h>
 #include <FixMath.h>
@@ -134,4 +135,18 @@ void Util::FrameDefaultButton(DialogPtr dialog, short itemNo, bool active)
 		FrameRoundRect(&box, 16, 16);
 		ActivateControl((ControlRef)itemH);
 	}
+}
+
+void Util::DebugStr(std::string msg)
+{
+	FILE *fp;
+	fp = fopen("Mac HD (68K):log.txt", "a");
+
+	if (fp)
+	{
+		fprintf(fp, msg.c_str());
+		fflush(fp);
+	}
+
+	fclose(fp);
 }

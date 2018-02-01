@@ -15,6 +15,7 @@
 
 void MyAddIconToList(Rect myCellRect, Rect myPlotRect, Cell myCell, ListHandle theList, PicHandle myPicHandle, int resID);
 
+Json::Value Prefs::Data = Get();
 
 Prefs::Prefs(ModuleManager* moduleManager)
 {
@@ -131,34 +132,44 @@ void Prefs::Update()
 	EndUpdate(_dialog);
 }
 
-void Prefs::Load()
+Json::Value Prefs::Get()
 {
-	/*long theSize = 0, start = 0;
-	PrefsData thePrefs = gThePrefs;
+	long theSize = 0, start = 0;
 	FSSpec theSpec;
 	short theFile;
+	OSErr err;
 
-	if (GetPrefsSpec(&theSpec)) {
-	if (FSpOpenDF(&theSpec, fsRdPerm, &theFile) == noErr) {
-	theSize = sizeof(PrefsData);
-	if (FSRead(theFile, &theSize, &thePrefs) == noErr) {
-	if (thePrefs.versionID == kPrefsVersion && thePrefs.prefsSize == sizeof(PrefsData)) {
-	gThePrefs = thePrefs;
-	FSClose(theFile);
-	return;
+	char buf[8192];
+	Json::Value root;
+
+	if (GetPrefsSpec(&theSpec)) 
+	{
+		if (FSpOpenDF(&theSpec, fsRdPerm, &theFile) == noErr) 
+		{
+			theSize = sizeof(buf);
+			err = FSRead(theFile, &theSize, &buf);
+				
+			if (err == noErr || err == eofErr)
+			{
+				Json::Reader reader;
+				bool parsingSuccessful = reader.parse(buf, root);
+			}
+
+			FSClose(theFile);
+		}
 	}
-	}
-	FSClose(theFile);
-	FSpDelete(&theSpec);
-	}
-	if (OpenHelp() == noErr) ChangeActive(GetHelpWindow());
-	}
-	SaveGeneralPrefs();*/
+
+	return root;
 }
 
 void Prefs::Save()
 {
-	const char* prefs = "Hello World!";
+	Json::StreamWriterBuilder wbuilder;
+	// Configure the Builder, then ...
+	std::string outputConfig = Json::writeString(wbuilder, Data);
+
+
+	const char* prefs = outputConfig.c_str();
 	long theSize = strlen(prefs);
 	FSSpec theSpec;
 	short theFile;
@@ -180,14 +191,12 @@ void Prefs::Save()
 				FSClose(theFile);
 			}
 			//else MinorError(errCantWritePrefs);
-			FSpDelete(&theSpec);
+			//FSpDelete(&theSpec);
 		}
 		//else MinorError(errCantWritePrefs);
 	}
 	//else MinorError(errCantWritePrefs);
 }
-
-
 
 bool Prefs::GetPrefsSpec(FSSpec *theSpec)
 {
@@ -253,23 +262,24 @@ void Prefs::MyAddItemsFromStringList(ListHandle myList)
 {
 	int rowNum;
 	Cell aCell;
-	const char* test1 = "Facebook (Anthony S)";
-	const char* test2 = "Gmail (Anthony S)";
 
 	rowNum = (*myList)->dataBounds.bottom;
 
-	//for (int i = 0; i < 10; i++)
-	//{
-	LAddRow(1, rowNum, myList);
-	SetPt(&aCell, 0, rowNum);
-	LSetCell(test1, strlen(test1), aCell, myList);
-	rowNum = rowNum + 1;
+	Json::Value accounts = Prefs::Data["accounts"];
 
-	LAddRow(1, rowNum, myList);
-	SetPt(&aCell, 0, rowNum);
-	LSetCell(test2, strlen(test2), aCell, myList);
+	for (int i = 0; i < accounts.size(); ++i)
+	{
+		std::string name =
+			_manager->GetModuleName(accounts[i]["type"].asString()) +
+			" (" + accounts[i]["name"].asString() + ")";
 
-	//}
+		const char* cName = name.c_str();
+
+		LAddRow(1, rowNum, myList);
+		SetPt(&aCell, 0, rowNum);
+		LSetCell(cName, strlen(cName), aCell, myList);
+		rowNum = rowNum + 1;
+	}
 }
 
 void Prefs::MyAddItemsFromIconList(ListHandle myList)
@@ -317,8 +327,6 @@ void Prefs::MyAddItemsFromIconList(ListHandle myList)
 
 	}
 }
-
-
 
 void MyAddIconToList(Rect myCellRect, Rect myPlotRect, Cell myCell, ListHandle theList, PicHandle myPicHandle, int resID)
 {

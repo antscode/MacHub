@@ -97,3 +97,16 @@ void ModuleManager::Update(WindowPtr windowPtr)
 	ForeColor(blackColor);
 	EndUpdate(windowPtr);
 }
+
+std::string ModuleManager::GetModuleName(std::string moduleId)
+{
+	for (std::vector<std::unique_ptr<Module>>::iterator it = Modules.begin(); it != Modules.end(); ++it)
+	{
+		if ((*it)->GetId() == moduleId)
+		{
+			return (*it)->GetName();
+		}
+	}
+
+	return nil;
+}

@@ -1,10 +1,14 @@
 #include <Lists.h>
+#include <json/json.h>
 #include "ModuleManager.h"
 
 class Prefs
 {
 public:
 	Prefs(ModuleManager* moduleManager);
+	static Json::Value Data;
+	
+	static void Save();
 	void ShowWindow();
 	void Update();
 	void HandleEvent(EventRecord* event);
@@ -14,9 +18,8 @@ private:
 	DialogPtr _dialog;
 	ListHandle _allAccounts;
 	ListHandle _userAccounts;
-	void Load();
-	void Save();
-	bool GetPrefsSpec(FSSpec *theSpec);
+	static Json::Value Get();
+	static bool GetPrefsSpec(FSSpec *theSpec);
 	ListHandle MyCreateVerticallyScrollingList(WindowPtr myWindow,
 		Rect myRect,
 		int columnsInList,
@@ -26,5 +29,4 @@ private:
 	void MyDrawListBorder(ListHandle myList);
 	void MyAddItemsFromStringList(ListHandle myList);
 	void MyAddItemsFromIconList(ListHandle myList);
-
 };
