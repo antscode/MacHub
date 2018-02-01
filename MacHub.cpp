@@ -9,6 +9,7 @@
 #include "Prefs.h"
 #include "Modules/Weather.h"
 #include "Modules/Facebook.h"
+#include "Modules/Google.h"
 
 void InitToolBox();
 void InitModules();
@@ -56,6 +57,7 @@ void InitModules()
 {
 	// Add available modules
 	_manager.Modules.push_back(std::make_unique<Facebook>());
+	_manager.Modules.push_back(std::make_unique<Google>());
 	_manager.Modules.push_back(std::make_unique<Weather>());
 }
 

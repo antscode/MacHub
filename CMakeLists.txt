@@ -15,7 +15,9 @@ add_application(MacHub
 	Prefs.r
 	IconListDef.cpp
 	ModuleManager.cpp
+	Modules/OAuthModule.cpp
 	Modules/Facebook.cpp
+	Modules/Google.cpp
 	Modules/Weather.cpp
 )
 

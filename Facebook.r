@@ -43,7 +43,7 @@ resource 'DITL' (130, purgeable) {
 		Button { enabled, "OK" };
 
 		{8, 72, 70, 380},
-		StaticText { disabled, "It looks like you haven't connected MacHub to your Facebook account. Please ensure you follow all of the steps on Facebook before clicking Continue." };
+		StaticText { disabled, "It looks like you haven't connected MacHub to your account. Please ensure you follow all of the steps your smartphone before clicking Continue." };
 	}
 };
 

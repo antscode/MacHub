@@ -42,6 +42,8 @@
     <ClCompile Include="Modules\Facebook.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\OAuthModule.cpp" />
+    <ClCompile Include="Modules\Google.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util.h" />
@@ -57,5 +59,7 @@
     <ClInclude Include="Modules\Module.h">
       <Filter>Modules</Filter>
     </ClInclude>
+    <ClInclude Include="Modules\OAuthModule.h" />
+    <ClInclude Include="Modules\Google.h" />
   </ItemGroup>
 </Project>

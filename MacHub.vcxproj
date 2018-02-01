@@ -106,6 +106,8 @@ xcopy *.APPL "C:\Users\AnthonySuper\OneDrive\Documents\Personal\Mac\Apps\Basilis
     <ClCompile Include="MacHub.cpp" />
     <ClCompile Include="ModuleManager.cpp" />
     <ClCompile Include="Modules\Facebook.cpp" />
+    <ClCompile Include="Modules\Google.cpp" />
+    <ClCompile Include="Modules\OAuthModule.cpp" />
     <ClCompile Include="Modules\Weather.cpp" />
     <ClCompile Include="Prefs.cpp" />
     <ClCompile Include="Util.cpp" />
@@ -125,7 +127,9 @@ xcopy *.APPL "C:\Users\AnthonySuper\OneDrive\Documents\Personal\Mac\Apps\Basilis
     <ClInclude Include="IconListDef.h" />
     <ClInclude Include="ModuleManager.h" />
     <ClInclude Include="Modules\Facebook.h" />
+    <ClInclude Include="Modules\Google.h" />
     <ClInclude Include="Modules\Module.h" />
+    <ClInclude Include="Modules\OAuthModule.h" />
     <ClInclude Include="Modules\Weather.h" />
     <ClInclude Include="Prefs.h" />
     <ClInclude Include="Util.h" />

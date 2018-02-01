@@ -1,10 +1,10 @@
-#ifndef _FACEBOOK_
-#define _FACEBOOK_
+#ifndef _GOOGLE_
+#define _GOOGLE_
 
 #include "Module.h"
 #include "OAuthModule.h"
 
-class Facebook : public OAuthModule
+class Google : public OAuthModule
 {
 public:
 	virtual std::string GetId();
@@ -17,8 +17,8 @@ protected:
 	virtual OAuthResponse QueryUserCode(AuthData authData);
 
 private:
-	std::string _accessToken = "246689145865793|e94f495fbf957ec7832a41bb8d274609";
+	std::string _clientId = "1058897383021-6a2n66spcg7vdh0be3pdpo1m2s42crjk.apps.googleusercontent.com";
 	
 };
 
-#endif // _FACEBOOK_
+#endif //_GOOGLE_
