@@ -58,7 +58,7 @@ void InitModules()
 	// Add available modules
 	_manager.Modules.push_back(std::make_unique<Facebook>());
 	_manager.Modules.push_back(std::make_unique<Google>());
-	_manager.Modules.push_back(std::make_unique<Weather>());
+	//_manager.Modules.push_back(std::make_unique<Weather>());
 }
 
 void InitWindow()

@@ -75,11 +75,10 @@ void Prefs::HandleEvent(EventRecord* eventPtr)
 
 				short cellIndex = cell.h; // TODO: Will fail after 4
 
-
-
-				_manager->Modules[cellIndex]->ShowPrefsDialog();
-
-
+				if (_manager->Modules.size() > cellIndex)
+				{
+					_manager->Modules[cellIndex]->ShowPrefsDialog();
+				}
 			}
 			break;
 

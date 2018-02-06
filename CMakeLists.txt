@@ -13,6 +13,7 @@ add_application(MacHub
 	Prefs.cpp
 	Prefs.h
 	Prefs.r
+	Keys.cpp
 	IconListDef.cpp
 	ModuleManager.cpp
 	Modules/OAuthModule.cpp

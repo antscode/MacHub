@@ -5,6 +5,7 @@
 #include "Google.h"
 #include "../Util.h"
 #include "../Prefs.h"
+#include "../Keys.h"
 
 std::string Google::GetId()
 {
@@ -29,6 +30,8 @@ void Google::Update()
 OAuthModule::AuthData Google::GetAuthData()
 {
 	AuthData authData;
+	authData.Status = Error;
+	authData.ErrorMsg = "";
 
 	HttpClient httpClient("https://accounts.google.com");
 
@@ -36,17 +39,33 @@ OAuthModule::AuthData Google::GetAuthData()
 	httpClient.SetCipherSuite(MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA);
 
 	HttpResponse response = httpClient.Post("/o/oauth2/device/code",
-		"client_id=" + _clientId + "&scope=email%20profile");
+		"client_id=" + Keys::GoogleClientId + "&scope=email%20profile");
 
-	Json::Value root;
-	Json::Reader reader;
-	bool parsingSuccessful = reader.parse(response.Content.c_str(), root);
+	if (response.Success)
+	{
+		Json::Value root;
+		Json::Reader reader;
+		bool parseSuccess = reader.parse(response.Content.c_str(), root);
 
-	Util::DebugStr(response.Content);
-
-	authData.Code = root["device_code"].asString();
-	authData.UserCode = root["user_code"].asString();
-	authData.Url = root["verification_url"].asString();
+		if (parseSuccess)
+		{
+			if (root.isMember("device_code"))
+			{
+				authData.Status = Success;
+				authData.Code = root["device_code"].asString();
+				authData.UserCode = root["user_code"].asString();
+				authData.Url = "google.com/device";
+			}
+			else if (root.isMember("error"))
+			{
+				authData.ErrorMsg = "Google returned error: " + root["error"].asString() + ".";
+			}
+		}
+	}
+	else
+	{
+		authData.ErrorMsg = GetResponseErrorMsg(response);
+	}
 
 	return authData;
 }
@@ -54,46 +73,67 @@ OAuthModule::AuthData Google::GetAuthData()
 OAuthModule::OAuthResponse Google::QueryUserCode(AuthData authData)
 {
 	OAuthResponse authResponse;
+	authResponse.Status = Error;
+	authResponse.ErrorMsg = "";
 
-	HttpClient httpClient("https://graph.facebook.com");
+	HttpClient httpClient("https://www.googleapis.com");
 	httpClient.SetCipherSuite(MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA);
 
-	HttpResponse response = httpClient.Post("/v2.6/device/login_status",
-		"access_token=" + _clientId + "&code=" + authData.Code);
+	HttpResponse response = httpClient.Post("/oauth2/v4/token",
+		"client_id=" + Keys::GoogleClientId +
+		"&client_secret=" + Keys::GoogleClientSecret +
+		"&code=" + authData.Code +
+		"&grant_type=http://oauth.net/grant_type/device/1.0");
 
-	Json::Value root;
-	Json::Reader reader;
-	bool parseSuccess = reader.parse(response.Content.c_str(), root);
-
-	if (parseSuccess && root.isMember("access_token"))
+	if (response.Success)
 	{
-		// Save access token to prefs
-		std::string userAccessToken = root["access_token"].asString();
+		Json::Value root;
+		Json::Reader reader;
+		bool parseSuccess = reader.parse(response.Content.c_str(), root);
 
-		// Get FB username to save to prefs
-		response = httpClient.Get("/v2.3/me?fields=name,picture&access_token=" + userAccessToken);
-		parseSuccess = reader.parse(response.Content.c_str(), root);
-		std::string username = root["name"].asString();
+		if (parseSuccess)
+		{
+			if (root.isMember("access_token"))
+			{
+				// Save access token to prefs
+				std::string accessToken = root["access_token"].asString();
+				std::string refreshToken = "";
 
-		authResponse.Status = Success;
-		authResponse.AccessToken = userAccessToken;
-		authResponse.RefreshToken = "";
-		authResponse.AccountName = username;
+				if (root.isMember("refresh_token"))
+				{
+					refreshToken = root["refresh_token"].asString();
+				}
+
+				// Get Google username to save to prefs
+				//response = httpClient.Get("/oauth2/v1/userinfo?access_token=abc");
+				//parseSuccess = reader.parse(response.Content.c_str(), root);
+				std::string username = "TODO";// root["name"].asString();
+
+				authResponse.Status = Success;
+				authResponse.AccessToken = accessToken;
+				authResponse.RefreshToken = refreshToken;
+				authResponse.AccountName = username;
+			}
+			else if (root.isMember("error"))
+			{
+				const Json::Value error = root["error"];
+
+				std::string resCode = error["code"].asString();
+
+				if (resCode == "authorization_pending")
+				{
+					authResponse.Status = Incomplete;
+				}
+				else
+				{
+					authResponse.ErrorMsg = "Google returned error code " + resCode + ".";
+				}
+			}
+		}
 	}
-	else if (root.isMember("error"))
+	else
 	{
-		const Json::Value error = root["error"];
-
-		int resCode = error["code"].asInt();
-
-		if (resCode == 31) // 31 = not yet confirmed by user
-		{
-			authResponse.Status = Incomplete;
-		}
-		else
-		{
-			authResponse.Status = Error;
-		}
+		authResponse.ErrorMsg = GetResponseErrorMsg(response);
 	}
 
 	return authResponse;

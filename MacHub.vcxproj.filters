@@ -44,6 +44,7 @@
     </ClCompile>
     <ClCompile Include="Modules\OAuthModule.cpp" />
     <ClCompile Include="Modules\Google.cpp" />
+    <ClCompile Include="Keys.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util.h" />
@@ -61,5 +62,6 @@
     </ClInclude>
     <ClInclude Include="Modules\OAuthModule.h" />
     <ClInclude Include="Modules\Google.h" />
+    <ClInclude Include="Keys.h" />
   </ItemGroup>
 </Project>

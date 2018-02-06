@@ -15,10 +15,6 @@ public:
 protected:
 	virtual AuthData GetAuthData();
 	virtual OAuthResponse QueryUserCode(AuthData authData);
-
-private:
-	std::string _accessToken = "246689145865793|e94f495fbf957ec7832a41bb8d274609";
-	
 };
 
 #endif // _FACEBOOK_

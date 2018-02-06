@@ -103,6 +103,7 @@ xcopy *.APPL "C:\Users\AnthonySuper\OneDrive\Documents\Personal\Mac\Apps\Basilis
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="IconListDef.cpp" />
+    <ClCompile Include="Keys.cpp" />
     <ClCompile Include="MacHub.cpp" />
     <ClCompile Include="ModuleManager.cpp" />
     <ClCompile Include="Modules\Facebook.cpp" />
@@ -125,6 +126,7 @@ xcopy *.APPL "C:\Users\AnthonySuper\OneDrive\Documents\Personal\Mac\Apps\Basilis
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IconListDef.h" />
+    <ClInclude Include="Keys.h" />
     <ClInclude Include="ModuleManager.h" />
     <ClInclude Include="Modules\Facebook.h" />
     <ClInclude Include="Modules\Google.h" />

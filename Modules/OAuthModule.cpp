@@ -9,15 +9,27 @@
 void OAuthModule::ShowPrefsDialog()
 {
 	PrefsDialog = GetNewDialog(129, 0, (WindowPtr)-1);
-	MacSetPort(PrefsDialog);
+
+	SetWTitle(PrefsDialog, Util::StrToPStr(GetName()));
 
 	_uiState = PleaseWait;
 	UpdateUI();
 
 	_authData = GetAuthData();
 
-	_uiState = EnterCode;
-	UpdateUI();
+	if (_authData.Status == Success)
+	{
+		_uiState = EnterCode;
+		UpdateUI();
+	}
+	else
+	{
+		ParamText(Util::StrToPStr(_authData.ErrorMsg), nil, nil, nil);
+		StopAlert(131, nil);
+
+		DisposeDialog(PrefsDialog);
+		PrefsDialog = 0;
+	}
 }
 
 void OAuthModule::UpdateUI()
@@ -100,6 +112,7 @@ void OAuthModule::HandlePrefsDialogEvent(EventRecord *eventPtr)
 		{
 			case 1:
 				DisposeDialog(PrefsDialog);
+				PrefsDialog = 0;
 				break;
 
 			case 2:
@@ -135,12 +148,14 @@ void OAuthModule::CheckUserCode()
 			Prefs::Save();
 
 			DisposeDialog(PrefsDialog);
+			PrefsDialog = 0;
 
 			break;
 		}
 
 		case Incomplete:
 		{
+			ParamText(Util::StrToPStr(GetName()), nil, nil, nil);
 			NoteAlert(130, nil);
 
 			_uiState = EnterCode;
@@ -150,6 +165,7 @@ void OAuthModule::CheckUserCode()
 
 		case Error:
 		{
+			ParamText(Util::StrToPStr(response.ErrorMsg), nil, nil, nil);
 			StopAlert(131, nil);
 
 			_uiState = EnterCode;
@@ -169,4 +185,20 @@ void OAuthModule::EraseStatusText()
 		PrefsDialog->portRect.bottom - 40);
 
 	EraseRect(&rect);
+}
+
+std::string OAuthModule::GetResponseErrorMsg(HttpResponse response)
+{
+	std::string err;
+
+	if (response.Success)
+	{
+		err = "Server returned status code " + std::to_string(response.StatusCode) + ".";
+	}
+	else
+	{
+		err = response.ErrorMsg;
+	}
+
+	return err;
 }

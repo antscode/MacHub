@@ -7,7 +7,7 @@ resource 'DLOG' (129, purgeable) {
 	goAway,
 	0,
 	129,
-	"Facebook",
+	"",
 	centerMainScreen
 };
 
@@ -43,7 +43,7 @@ resource 'DITL' (130, purgeable) {
 		Button { enabled, "OK" };
 
 		{8, 72, 70, 380},
-		StaticText { disabled, "It looks like you haven't connected MacHub to your account. Please ensure you follow all of the steps your smartphone before clicking Continue." };
+		StaticText { disabled, "It looks like you haven't connected MacHub to your ^0 account. Please ensure you follow all of the steps your smartphone before clicking Continue." };
 	}
 };
 
@@ -65,6 +65,6 @@ resource 'DITL' (131, purgeable) {
 		Button { enabled, "OK" };
 
 		{8, 72, 70, 380},
-		StaticText { disabled, "Sorry, something went wrong." };
+		StaticText { disabled, "Sorry, something went wrong.\r^0" };
 	}
 };

@@ -5,6 +5,7 @@
 #include "Facebook.h"
 #include "../Util.h"
 #include "../Prefs.h"
+#include "../Keys.h"
 
 std::string Facebook::GetId()
 {
@@ -29,6 +30,8 @@ void Facebook::Update()
 OAuthModule::AuthData Facebook::GetAuthData()
 {
 	AuthData authData;
+	authData.Status = Error;
+	authData.ErrorMsg = "";
 
 	HttpClient httpClient("https://graph.facebook.com");
 
@@ -36,15 +39,33 @@ OAuthModule::AuthData Facebook::GetAuthData()
 	httpClient.SetCipherSuite(MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA);
 
 	HttpResponse response = httpClient.Post("/v2.6/device/login",
-		"access_token=" + _accessToken + "&scope=user_posts");
+		"access_token=" + Keys::FacebookAccessToken + "&scope=user_posts");
 
-	Json::Value root;
-	Json::Reader reader;
-	bool parsingSuccessful = reader.parse(response.Content.c_str(), root);
+	if (response.Success)
+	{
+		Json::Value root;
+		Json::Reader reader;
+		bool parseSuccess = reader.parse(response.Content.c_str(), root);
 
-	authData.Code = root["code"].asString();
-	authData.UserCode = root["user_code"].asString();
-	authData.Url = "facebook.com/device";
+		if (parseSuccess)
+		{
+			if (root.isMember("code"))
+			{
+				authData.Status = Success;
+				authData.Code = root["code"].asString();
+				authData.UserCode = root["user_code"].asString();
+				authData.Url = "facebook.com/device";
+			}
+			else if (root.isMember("error"))
+			{
+				authData.ErrorMsg = "Facebook returned error: " + root["error"].asString() + ".";
+			}
+		}
+	}
+	else
+	{
+		authData.ErrorMsg = GetResponseErrorMsg(response);
+	}
 
 	return authData;
 }
@@ -52,46 +73,58 @@ OAuthModule::AuthData Facebook::GetAuthData()
 OAuthModule::OAuthResponse Facebook::QueryUserCode(AuthData authData)
 {
 	OAuthResponse authResponse;
+	authResponse.Status = Error;
+	authResponse.ErrorMsg = "";
 
 	HttpClient httpClient("https://graph.facebook.com");
 	httpClient.SetCipherSuite(MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA);
 
 	HttpResponse response = httpClient.Post("/v2.6/device/login_status",
-		"access_token=" + _accessToken + "&code=" + authData.Code);
+		"access_token=" + Keys::FacebookAccessToken + "&code=" + authData.Code);
 
-	Json::Value root;
-	Json::Reader reader;
-	bool parseSuccess = reader.parse(response.Content.c_str(), root);
-
-	if (parseSuccess && root.isMember("access_token"))
+	if (response.Success)
 	{
-		// Save access token to prefs
-		std::string userAccessToken = root["access_token"].asString();
+		Json::Value root;
+		Json::Reader reader;
+		bool parseSuccess = reader.parse(response.Content.c_str(), root);
 
-		// Get FB username to save to prefs
-		response = httpClient.Get("/v2.3/me?fields=name,picture&access_token=" + userAccessToken);
-		parseSuccess = reader.parse(response.Content.c_str(), root);
-		std::string username = root["name"].asString();
+		if (parseSuccess)
+		{
+			if (root.isMember("access_token"))
+			{
+				// Save access token to prefs
+				std::string userAccessToken = root["access_token"].asString();
 
-		authResponse.Status = Success;
-		authResponse.AccessToken = userAccessToken;
-		authResponse.RefreshToken = "";
-		authResponse.AccountName = username;
+				// Get FB username to save to prefs
+				response = httpClient.Get("/v2.3/me?fields=name,picture&access_token=" + userAccessToken);
+				parseSuccess = reader.parse(response.Content.c_str(), root);
+				std::string username = root["name"].asString();
+
+				authResponse.Status = Success;
+				authResponse.AccessToken = userAccessToken;
+				authResponse.RefreshToken = "";
+				authResponse.AccountName = username;
+			}
+			else if (root.isMember("error"))
+			{
+				const Json::Value error = root["error"];
+
+				int resCode = error["code"].asInt();
+
+				if (resCode == 31) // 31 = not yet confirmed by user
+				{
+					authResponse.Status = Incomplete;
+				}
+				else
+				{
+					authResponse.ErrorMsg = "Facebook returned error code " + std::to_string(resCode) + ".";
+				}
+			}
+		}
 	}
-	else if (root.isMember("error"))
+	else
 	{
-		const Json::Value error = root["error"];
-
-		int resCode = error["code"].asInt();
-
-		if (resCode == 31) // 31 = not yet confirmed by user
-		{
-			authResponse.Status = Incomplete;
-		}
-		else
-		{
-			authResponse.Status = Error;
-		}
+		authResponse.ErrorMsg = GetResponseErrorMsg(response);
 	}
 
 	return authResponse;
