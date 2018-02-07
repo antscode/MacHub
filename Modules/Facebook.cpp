@@ -97,13 +97,32 @@ OAuthModule::OAuthResponse Facebook::QueryUserCode(AuthData authData)
 
 				// Get FB username to save to prefs
 				response = httpClient.Get("/v2.3/me?fields=name,picture&access_token=" + userAccessToken);
-				parseSuccess = reader.parse(response.Content.c_str(), root);
-				std::string username = root["name"].asString();
 
-				authResponse.Status = Success;
-				authResponse.AccessToken = userAccessToken;
-				authResponse.RefreshToken = "";
-				authResponse.AccountName = username;
+				if (response.Success)
+				{
+					parseSuccess = reader.parse(response.Content.c_str(), root);
+
+					if (parseSuccess && root.isMember("name"))
+					{
+						std::string username = root["name"].asString();
+
+						authResponse.Status = Success;
+						authResponse.AccessToken = userAccessToken;
+						authResponse.RefreshToken = "";
+						authResponse.AccountName = username;
+					}
+					else if(root.isMember("error"))
+					{
+						const Json::Value error = root["error"];
+						int resCode = error["code"].asInt();
+
+						authResponse.ErrorMsg = "Facebook returned error code " + std::to_string(resCode) + " when gettng username.";
+					}
+				}
+				else
+				{
+					authResponse.ErrorMsg = GetResponseErrorMsg(response);
+				}
 			}
 			else if (root.isMember("error"))
 			{

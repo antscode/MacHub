@@ -90,7 +90,7 @@ OAuthModule::OAuthResponse Google::QueryUserCode(AuthData authData)
 		Json::Value root;
 		Json::Reader reader;
 		bool parseSuccess = reader.parse(response.Content.c_str(), root);
-
+		
 		if (parseSuccess)
 		{
 			if (root.isMember("access_token"))
@@ -105,28 +105,43 @@ OAuthModule::OAuthResponse Google::QueryUserCode(AuthData authData)
 				}
 
 				// Get Google username to save to prefs
-				//response = httpClient.Get("/oauth2/v1/userinfo?access_token=abc");
-				//parseSuccess = reader.parse(response.Content.c_str(), root);
-				std::string username = "TODO";// root["name"].asString();
+				response = httpClient.Get("/oauth2/v1/userinfo?access_token=" + accessToken);
 
-				authResponse.Status = Success;
-				authResponse.AccessToken = accessToken;
-				authResponse.RefreshToken = refreshToken;
-				authResponse.AccountName = username;
+				if (response.Success)
+				{
+					parseSuccess = reader.parse(response.Content.c_str(), root);
+
+					if (parseSuccess && root.isMember("name"))
+					{
+						std::string username = root["name"].asString();
+
+						authResponse.Status = Success;
+						authResponse.AccessToken = accessToken;
+						authResponse.RefreshToken = refreshToken;
+						authResponse.AccountName = username;
+					}
+					else if (root.isMember("error"))
+					{
+						std::string error = root["error"].asString();
+						authResponse.ErrorMsg = "Google returned error " + error + " when getting username.";
+					}
+				}
+				else
+				{
+					authResponse.ErrorMsg = GetResponseErrorMsg(response);
+				}
 			}
 			else if (root.isMember("error"))
 			{
-				const Json::Value error = root["error"];
+				std::string error = root["error"].asString();
 
-				std::string resCode = error["code"].asString();
-
-				if (resCode == "authorization_pending")
+				if (error == "authorization_pending")
 				{
 					authResponse.Status = Incomplete;
 				}
 				else
 				{
-					authResponse.ErrorMsg = "Google returned error code " + resCode + ".";
+					authResponse.ErrorMsg = "Google returned error " + error + ".";
 				}
 			}
 		}
