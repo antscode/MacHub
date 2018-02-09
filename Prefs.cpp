@@ -1,10 +1,5 @@
-#include <ctype.h>
 #include <string.h>
-#include <Types.h>
 #include <Folders.h>
-#include <Files.h>
-#include <Errors.h>
-#include <TextUtils.h>
 #include <Resources.h>
 #include <Dialogs.h>
 #include <Quickdraw.h>
@@ -12,42 +7,37 @@
 #include "Prefs.h"
 #include "Util.h"
 
-
-void MyAddIconToList(Rect myCellRect, Rect myPlotRect, Cell myCell, ListHandle theList, PicHandle myPicHandle, int resID);
-
 Json::Value Prefs::Data = Get();
 
 Prefs::Prefs(ModuleManager* moduleManager)
 {
+	_active = true;
 	_manager = moduleManager;
 }
 
 void Prefs::ShowWindow()
 {
-	_dialog = GetNewDialog(128, 0, (WindowPtr)-1);
-	MacSetPort(_dialog);
-	SetWRefCon(_dialog, (long)this);
-
-	// Get user item for list
 	DialogItemType type;
 	Handle itemH;
 	Rect box;
+
+	_dialog = GetNewDialog(128, 0, (WindowPtr)-1);
+	MacSetPort(_dialog);
+
+	// Deactivate Add & Remove buttons by default
+	GetDialogItem(_dialog, 3, &type, &itemH, &box);
+	DeactivateControl((ControlRef)itemH);
+	GetDialogItem(_dialog, 4, &type, &itemH, &box);
+	DeactivateControl((ControlRef)itemH);
+
+	// Initialise lists
+	GetDialogItem(_dialog, 1, &type, &itemH, &box);
+	_allAccounts = CreateList(_dialog, box, 4, 128, 32, 32);
+	PopulateAccountList();
+
 	GetDialogItem(_dialog, 2, &type, &itemH, &box);
-
-	_allAccounts = MyCreateVerticallyScrollingList(_dialog, box, 4, 128, 32, 32);
-
-	MyAddItemsFromIconList(_allAccounts);
-
-	DialogItemType type2;
-	Handle itemH2;
-	Rect box2;
-	GetDialogItem(_dialog, 3, &type2, &itemH2, &box2);
-
-	_userAccounts = MyCreateVerticallyScrollingList(_dialog, box2, 1, 0, 0, 0);
-
-	MyAddItemsFromStringList(_userAccounts);
-
-	Update(); // Remove me?
+	_userAccounts = CreateList(_dialog, box, 1, 0, 0, 0);
+	PopulateUserAccountList();
 }
 
 DialogPtr Prefs::GetWindow()
@@ -59,6 +49,10 @@ void Prefs::HandleEvent(EventRecord* eventPtr)
 {
 	short int item;
 	DialogRef dialogRef;
+	DialogItemType type;
+	Handle itemH;
+	Rect box;
+	Point pt;
 
 	if (DialogSelect(eventPtr, &dialogRef, &item))
 	{
@@ -66,69 +60,146 @@ void Prefs::HandleEvent(EventRecord* eventPtr)
 
 		switch (item)
 		{
-		case 2:
-			Point pt;
-			GetMouse(&pt);
-			if (LClick(pt, 0, _allAccounts))
+			case 1:
 			{
+				// All Accounts List
+				GetMouse(&pt);
+
+				// Deactivate any user account selection
+				LSetSelect(false, LLastClick(_userAccounts), _userAccounts);
+				GetDialogItem(_dialog, 4, &type, &itemH, &box);
+				DeactivateControl((ControlRef)itemH);
+
+				// Activate cell & add account button
+				bool dblClick = LClick(pt, 0, _allAccounts);
 				Cell cell = LLastClick(_allAccounts);
+				short cellIndex = (cell.v * _allAccountColumns) + cell.h;
+				GetDialogItem(_dialog, 3, &type, &itemH, &box);
 
-				short cellIndex = cell.h; // TODO: Will fail after 4
-
-				if (_manager->Modules.size() > cellIndex)
+				if (cellIndex < _manager->Modules.size() &&
+					!UserAccountExists(_manager->Modules[cellIndex]->GetId()))
 				{
-					_manager->Modules[cellIndex]->ShowPrefsDialog();
+					ActivateControl((ControlRef)itemH);
+
+					if (dblClick)
+					{
+						_manager->Modules[cellIndex]->ShowPrefsDialog();
+					}
 				}
+				else
+				{
+					DeactivateControl((ControlRef)itemH);
+				}
+				break;
 			}
-			break;
 
-		case 3:
-			Point pt2;
-			GetMouse(&pt2);
-			if (LClick(pt2, 0, _userAccounts))
+			case 2:
 			{
-				// Double clicked..
-			}
-			break;
+				// User Accounts List
+				GetMouse(&pt);
 
-		case 6:
-			LDispose(_allAccounts);
-			LDispose(_userAccounts);
-			DisposeDialog(_dialog);
-			break;
+				// Deactivate any account selection
+				LSetSelect(false, LLastClick(_allAccounts), _allAccounts);
+				GetDialogItem(_dialog, 3, &type, &itemH, &box);
+				DeactivateControl((ControlRef)itemH);
+
+				// Activate cell & remove account button
+				bool dblClick = LClick(pt, 0, _userAccounts);
+				Cell cell = LLastClick(_userAccounts);
+				short cellIndex = cell.v;
+				GetDialogItem(_dialog, 4, &type, &itemH, &box);
+
+				if (cellIndex < Prefs::Data["accounts"].size())
+				{
+					ActivateControl((ControlRef)itemH);
+				}
+				else
+				{
+					DeactivateControl((ControlRef)itemH);
+				}
+				break;
+			}
+
+			case 3:
+			{
+				// Add Account button
+				Cell cell = LLastClick(_allAccounts);
+				short cellIndex = (cell.v * _allAccountColumns) + cell.h;
+				_manager->Modules[cellIndex]->ShowPrefsDialog();
+				break;
+			}
+
+			case 4:
+			{
+				// Remove Account button
+				if (NoteAlert(134, nil) == 1)
+				{
+					Cell cell = LLastClick(_userAccounts);
+					short cellIndex = cell.v;
+					RemoveAccount(cellIndex);
+				}
+
+				GetDialogItem(_dialog, 4, &type, &itemH, &box);
+				DeactivateControl((ControlRef)itemH);
+				break;
+			}
 		}
 	}
 }
 
+void Prefs::CloseWindow()
+{
+	LDispose(_allAccounts);
+	LDispose(_userAccounts);
+	DisposeDialog(_dialog);
+	_active = false;
+}
+
+bool Prefs::Active()
+{
+	return _active;
+}
+
 void Prefs::Update()
 {
-	BeginUpdate(_dialog);
-
 	MacSetPort(_dialog);
 
-	MyDrawListBorder(_allAccounts);
+	BeginUpdate(_dialog);
 
-
-	MyDrawListBorder(_userAccounts);
-
+	DrawListBorder(_allAccounts);
+	DrawListBorder(_userAccounts);
 
 	LUpdate(_dialog->visRgn, _allAccounts);
 	LUpdate(_dialog->visRgn, _userAccounts);
-
-	// Frame border default button
-	DialogItemType type;
-	Handle itemH;
-	Rect box;
-
-	GetDialogItem(_dialog, 6, &type, &itemH, &box);
-	InsetRect(&box, -4, -4);
-	PenSize(3, 3);
-	FrameRoundRect(&box, 16, 16);
 
 	// Update DITL elements
 	UpdateDialog(_dialog, _dialog->visRgn);
 
 	EndUpdate(_dialog);
+}
+
+void Prefs::Activate(bool becomingActive)
+{
+	DialogItemType type;
+	Handle itemH;
+	Rect box;
+
+	// Deactivate all selections
+	LSetSelect(false, LLastClick(_userAccounts), _userAccounts);
+	GetDialogItem(_dialog, 4, &type, &itemH, &box);
+	DeactivateControl((ControlRef)itemH);
+
+	LSetSelect(false, LLastClick(_allAccounts), _allAccounts);
+	GetDialogItem(_dialog, 3, &type, &itemH, &box);
+	DeactivateControl((ControlRef)itemH);
+
+	if (becomingActive)
+	{
+		// Refresh user account list
+		PopulateUserAccountList();
+		MacSetPort(_dialog);
+		InvalRect(&(*_userAccounts)->rView);
+	}
 }
 
 Json::Value Prefs::Get()
@@ -161,45 +232,43 @@ Json::Value Prefs::Get()
 	return root;
 }
 
-void Prefs::Save()
+bool Prefs::Save()
 {
+	FSSpec fsSpec;
+	short file;
+	OSErr err;
+
 	Json::StreamWriterBuilder wbuilder;
-	// Configure the Builder, then ...
 	std::string outputConfig = Json::writeString(wbuilder, Data);
-
-
 	const char* prefs = outputConfig.c_str();
-	long theSize = strlen(prefs);
-	FSSpec theSpec;
-	short theFile;
-	OSErr theErr;
+	long size = strlen(prefs);
 
-	if (GetPrefsSpec(&theSpec)) {
-		theErr = FSpOpenDF(&theSpec, fsRdWrPerm, &theFile);
-		if (theErr != noErr) {
-			if ((theErr = FSpCreate(&theSpec, 'MHUB', 'pref', 0)) == noErr)
-				theErr = FSpOpenDF(&theSpec, fsRdWrPerm, &theFile);
+	if (GetPrefsSpec(&fsSpec)) {
+		err = FSpOpenDF(&fsSpec, fsRdWrPerm, &file);
+		if (err != noErr) {
+			if ((err = FSpCreate(&fsSpec, 'MHUB', 'pref', 0)) == noErr)
+				err = FSpOpenDF(&fsSpec, fsRdWrPerm, &file);
 		}
-		if (theErr == noErr) {
-			if (SetEOF(theFile, 0L) == noErr) {
-				if (FSWrite(theFile, &theSize, prefs) == noErr) {
-					FSClose(theFile);
-					return;
+		if (err == noErr) {
+			if (SetEOF(file, 0L) == noErr) {
+				if (FSWrite(file, &size, prefs) == noErr) {
+					FSClose(file);
+					return true;
 				}
-				//else MinorError(errCantWritePrefs);
-				FSClose(theFile);
+
+				FSClose(file);
 			}
-			//else MinorError(errCantWritePrefs);
-			//FSpDelete(&theSpec);
 		}
-		//else MinorError(errCantWritePrefs);
 	}
-	//else MinorError(errCantWritePrefs);
+
+	ParamText("\pAn error occurred saving preferences.", nil, nil, nil);
+	StopAlert(131, nil);
+	return false;
 }
 
 bool Prefs::GetPrefsSpec(FSSpec *theSpec)
 {
-	Str255     prefsName = "\pMacHub Preferences";
+	Str255 prefsName = "\pMacHub Preferences";
 	short vRefNum;
 	long dirID;
 
@@ -211,91 +280,91 @@ bool Prefs::GetPrefsSpec(FSSpec *theSpec)
 	return false;
 }
 
-ListHandle Prefs::MyCreateVerticallyScrollingList(WindowPtr myWindow,
-	Rect myRect,
+ListHandle Prefs::CreateList(
+	WindowPtr windowPtr,
+	Rect rect,
 	int columnsInList,
-	int myLDEF,
+	int ldef,
 	short cellWidth,
 	short cellHeight)
 {
-	bool kDoDraw = TRUE; //{always draw list after changes}
-	bool kNoGrow = FALSE; //{don't leave room for size box}
-	bool kIncludeScrollBar = TRUE; //{leave room for scroll bar}
-	int kScrollBarWidth = 15; //{width of vertical scroll bar}
-
-	Rect myDataBounds; //{initial dimensions of the list}
-	Point myCellSize; //{size of each cell in list}
-
-					  // { specify dimensions of the list }
-					  // {start with a list that contains no rows}
+	bool doDraw = true;
+	bool noGrow = false;
+	bool includeScrollBar = true;
+	int scrollBarWidth = 15;
+	Rect myDataBounds;
+	Point myCellSize;
 
 	MacSetRect(&myDataBounds, 0, 0, columnsInList, 0);
-
-	// {let the List Manager calculate the size of a cell}
 	SetPt(&myCellSize, cellWidth, cellHeight);
+	rect.right = rect.right - scrollBarWidth;
 
-	// {adjust the rectangle to leave room for the scroll bar}
-	myRect.right = myRect.right - kScrollBarWidth;
-
-	// {create the list}
 	return
-		LNew(&myRect, &myDataBounds, myCellSize, myLDEF, myWindow,
-			kDoDraw, kNoGrow, !kIncludeScrollBar,
-			kIncludeScrollBar);
+		LNew(&rect, &myDataBounds, myCellSize, ldef, windowPtr,
+			doDraw, noGrow, !includeScrollBar,
+			includeScrollBar);
 }
 
-void Prefs::MyDrawListBorder(ListHandle myList)
+void Prefs::DrawListBorder(ListHandle myList)
 {
-	Rect myBorder; // {box for list}
-	PenState myPenState; //{current status of pen}
+	Rect border;
+	PenState penState;
 
-	myBorder = (*myList)->rView; //{get view rectangle}
-	GetPenState(&myPenState); //{store pen state}
-	PenSize(1, 1); //{set pen to 1 pixel}
-	InsetRect(&myBorder, -1, -1); //{adjust rectangle for framing}
-	FrameRect(&myBorder);// {draw border}
-	SetPenState(&myPenState);//{restore old pen state}
+	border = (*myList)->rView;
+	GetPenState(&penState);
+	PenSize(1, 1);
+	InsetRect(&border, -1, -1);
+	FrameRect(&border);
+	SetPenState(&penState);
 }
 
-void Prefs::MyAddItemsFromStringList(ListHandle myList)
+void Prefs::PopulateUserAccountList()
 {
 	int rowNum;
 	Cell aCell;
 
-	rowNum = (*myList)->dataBounds.bottom;
+	LDelRow(0, 1, _userAccounts);
 
+	rowNum = (*_userAccounts)->dataBounds.bottom;
 	Json::Value accounts = Prefs::Data["accounts"];
 
 	for (int i = 0; i < accounts.size(); ++i)
 	{
 		std::string name =
 			_manager->GetModuleName(accounts[i]["type"].asString()) +
-			" (" + accounts[i]["name"].asString() + ")";
+			" - " + accounts[i]["name"].asString();
 
 		const char* cName = name.c_str();
 
-		LAddRow(1, rowNum, myList);
+		LAddRow(1, rowNum, _userAccounts);
 		SetPt(&aCell, 0, rowNum);
-		LSetCell(cName, strlen(cName), aCell, myList);
+		LSetCell(cName, strlen(cName), aCell, _userAccounts);
 		rowNum = rowNum + 1;
 	}
 }
 
-void Prefs::MyAddItemsFromIconList(ListHandle myList)
+void Prefs::PopulateAccountList()
 {
+	Handle iconRes;
+	short resID;
+	ResType resType;
+	PicHandle picture;
+	Rect rect;
+	Rect plotRect;
+	Str255 resName;
 	int rowNum, colNum, icons, i = 0;
-	Cell aCell;
+	Cell cell;
 
 	icons = _manager->Modules.size();
-	colNum = (**myList).dataBounds.right;
+	colNum = (**_allAccounts).dataBounds.right;
 	rowNum = (icons + (colNum - 1)) / colNum;
 
-	LAddRow(rowNum, 0, myList);
+	LAddRow(rowNum, 0, _allAccounts);
 
 	for (std::vector<std::unique_ptr<Module>>::iterator it = _manager->Modules.begin(); it != _manager->Modules.end(); ++it)
 	{
-		aCell.v = i / colNum;
-		aCell.h = i % colNum;
+		cell.v = i / colNum;
+		cell.h = i % colNum;
 
 		std::string moduleIcon = (*it)->GetId();
 
@@ -307,55 +376,64 @@ void Prefs::MyAddItemsFromIconList(ListHandle myList)
 		char* pModuleIcon;
 		pModuleIcon = (char *)Util::CtoPStr((char*)moduleIcon.c_str());
 
-		Handle iconRes;
-		short resID;
-		ResType theResType;
-		unsigned char resName[256];
-
 		iconRes = GetNamedResource('PICT', (ConstStr255Param)pModuleIcon);
-		GetResInfo(iconRes, &resID, &theResType, resName);
+		GetResInfo(iconRes, &resID, &resType, resName);
 
-
-		PicHandle picture;
-		Rect   rect;
-		Rect   plotRect;
-
-		MyAddIconToList(rect, plotRect, aCell, myList, picture, resID);
-
+		AddIconToList(rect, plotRect, cell, _allAccounts, picture, resID);
 		i++;
-
 	}
 }
 
-void MyAddIconToList(Rect myCellRect, Rect myPlotRect, Cell myCell, ListHandle theList, PicHandle myPicHandle, int resID)
+void Prefs::AddIconToList(
+	Rect cellRect, 
+	Rect plotRect, 
+	Cell cell, 
+	ListHandle list, 
+	PicHandle picHandle, 
+	int resID)
 {
-	const int kIconWidth = 32; // width of an icon
-	const int kIconHeight = 32; // height of an icon
-	const int kExtraSpace = 2; // extra space on top and to left of icon
-
-							   //CIconHandle myIcon;
-
-							   // picture occupies entire cell rectangle
-	MacSetRect(&myCellRect, 0, 0, kIconWidth + kExtraSpace, kIconHeight + kExtraSpace);
-
-	// plot icon over portion of rectangle
-	MacSetRect(&myPlotRect, kExtraSpace, kExtraSpace, kIconWidth + kExtraSpace, kIconHeight + kExtraSpace);
-
-	// load icon from resource file
-	//myIcon = GetCIcon(resID);
-
 	Rect pictRect;
 	PicHandle picture;
-	picture = GetPicture(resID);
 
-	// create the picture
-	myPicHandle = OpenPicture(&myCellRect);
-	DrawPicture(picture, &myPlotRect);
+	const int iconWidth = 32;
+	const int iconHeight = 32;
+	const int extraSpace = 2; // extra space on top and to left of icon
+
+	// Picture occupies entire cell rectangle
+	MacSetRect(&cellRect, 0, 0, iconWidth + extraSpace, iconHeight + extraSpace);
+
+	// Plot icon over portion of rectangle
+	MacSetRect(&plotRect, extraSpace, extraSpace, iconWidth + extraSpace, iconHeight + extraSpace);
+
+	// Create the picture
+	picture = GetPicture(resID);
+	picHandle = OpenPicture(&cellRect);
+	DrawPicture(picture, &plotRect);
 	ClosePicture();
 
-	// store handle to picture as cell data
-	LSetCell(&myPicHandle, sizeof(PicHandle), myCell, theList);
+	// Store handle to picture as cell data
+	LSetCell(&picHandle, sizeof(PicHandle), cell, list);
+}
 
-	// release icon resource
-	//ReleaseResource((Handle)myIcon);
+void Prefs::RemoveAccount(short index)
+{
+	Json::Value* removed;
+
+	Prefs::Data["accounts"].removeIndex(index, removed);
+	Prefs::Save();
+}
+
+bool Prefs::UserAccountExists(std::string type)
+{
+	Json::Value accounts = Prefs::Data["accounts"];
+
+	for (int i = 0; i < accounts.size(); ++i)
+	{
+		if (accounts[i]["type"].asString() == type)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

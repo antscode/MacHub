@@ -22,7 +22,10 @@ extern "C"
 	{
 		// use color highlighting if possible
 		//BitClr((Ptr)LMGetHiliteMode(), pHiliteBit);
-		MacInvertRect(cellRect); // highlight cell rectangle
+		if (dataLen == sizeof(PicHandle))
+		{
+			MacInvertRect(cellRect); // highlight cell rectangle
+		}
 	}
 
 	pascal void MyLDEFDraw(Boolean selected, Rect* cellRect, Cell theCell, short dataOffset, short dataLen, ListHandle theList)

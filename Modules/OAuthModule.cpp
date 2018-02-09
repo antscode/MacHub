@@ -149,7 +149,6 @@ void OAuthModule::CheckUserCode()
 
 			DisposeDialog(PrefsDialog);
 			PrefsDialog = 0;
-
 			break;
 		}
 
@@ -194,6 +193,10 @@ std::string OAuthModule::GetResponseErrorMsg(HttpResponse response)
 	if (response.Success)
 	{
 		err = "Server returned status code " + std::to_string(response.StatusCode) + ".";
+	}
+	else if (response.ErrorCode == ConnectionError)
+	{
+		err = "Could not connect to " + GetName() + ", please check your Internet connection.";
 	}
 	else
 	{

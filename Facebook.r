@@ -61,7 +61,7 @@ resource 'ALRT' (131, purgeable ) {
 
 resource 'DITL' (131, purgeable) {
 	{
-		{ 80, 300, 80+20, 380 },
+		{ 76, 300, 76+20, 380 },
 		Button { enabled, "OK" };
 
 		{8, 72, 70, 380},

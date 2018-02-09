@@ -20,6 +20,8 @@ void DoEvent(EventRecord *eventPtr);
 void HandleMouseDown(EventRecord *eventPtr); 
 void HandleInContent(EventRecord *eventPtr);
 void HandleUpdate(EventRecord *eventPtr);
+void HandleActivate(EventRecord *eventPtr);
+void HandleOSEvt(EventRecord *eventPtr);
 
 extern "C"
 {
@@ -63,22 +65,22 @@ void InitModules()
 
 void InitWindow()
 {
-	Rect mBarRect;
-	RgnHandle mBarRgn;
-	
-	_window = NewWindow(nil, &(qd.screenBits.bounds), "\p", true, plainDBox, (WindowPtr)-1L, false, (long)nil);
+	//Rect mBarRect;
+	//RgnHandle mBarRgn;
+	//
+	//_window = NewWindow(nil, &(qd.screenBits.bounds), "\p", true, plainDBox, (WindowPtr)-1L, false, (long)nil);
 
-	MacSetRect(&mBarRect,
-		qd.screenBits.bounds.left,
-		qd.screenBits.bounds.top,
-		qd.screenBits.bounds.right,
-		qd.screenBits.bounds.top + GetMBarHeight());
-	mBarRgn = NewRgn();
-	RectRgn(mBarRgn, &mBarRect);
-	MacUnionRgn(_window->visRgn, mBarRgn, _window->visRgn);
-	DisposeRgn(mBarRgn);
-	
-	_manager.Init();
+	//MacSetRect(&mBarRect,
+	//	qd.screenBits.bounds.left,
+	//	qd.screenBits.bounds.top,
+	//	qd.screenBits.bounds.right,
+	//	qd.screenBits.bounds.top + GetMBarHeight());
+	//mBarRgn = NewRgn();
+	//RectRgn(mBarRgn, &mBarRect);
+	//MacUnionRgn(_window->visRgn, mBarRgn, _window->visRgn);
+	//DisposeRgn(mBarRgn);
+	//
+	//_manager.Init();
 	_prefs.ShowWindow();
 }
 
@@ -87,7 +89,7 @@ void EventLoop()
 	EventRecord event;
 	int sleep = 60;
 
-	while (!_done)
+	while (_prefs.Active())
 	{
 		if (WaitNextEvent(everyEvent, &event, sleep, NULL))
 		{
@@ -105,8 +107,15 @@ void DoEvent(EventRecord *eventPtr)
 			break;
 
 		case updateEvt:
-		case activateEvt:
 			HandleUpdate(eventPtr);
+			break;
+
+		case activateEvt:
+			HandleActivate(eventPtr);
+			break;
+
+		case osEvt:
+			HandleOSEvt(eventPtr);
 			break;
 	}
 }
@@ -120,10 +129,6 @@ void HandleMouseDown(EventRecord *eventPtr)
 
 	switch (part)
 	{
-		case inSysWindow:
-			SystemClick(eventPtr, window);
-			break;
-
 		case inContent:
 			if (window != FrontWindow())
 				SysBeep(10);
@@ -136,6 +141,13 @@ void HandleMouseDown(EventRecord *eventPtr)
 				SysBeep(10);
 			else
 				DragWindow(window, eventPtr->where, &qd.screenBits.bounds);
+			break;
+
+		case inGoAway:
+			if (TrackGoAway(window, eventPtr->where))
+			{
+				_prefs.CloseWindow();
+			}
 			break;
 	}
 }
@@ -174,6 +186,28 @@ void HandleUpdate(EventRecord *eventPtr)
 	else
 	{
 		_manager.HandleEvent(eventPtr);
+	}
+}
+
+void HandleActivate(EventRecord *eventPtr)
+{
+	WindowPtr windowPtr = (WindowPtr)eventPtr->message;
+
+	if (windowPtr == _prefs.GetWindow())
+	{
+		bool becomingActive = (eventPtr->modifiers & activeFlag) == activeFlag;
+		_prefs.Activate(becomingActive);
+	}
+}
+
+void HandleOSEvt(EventRecord *eventPtr)
+{
+	switch ((eventPtr->message >> 24) & 0x000000FF)
+	{
+		case suspendResumeMessage:
+			bool becomingActive = (eventPtr->message & resumeFlag) == 1;
+			_prefs.Activate(becomingActive);
+			break;
 	}
 }
 

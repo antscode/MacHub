@@ -1,13 +1,13 @@
 #include "Dialogs.r"
 
 resource 'DLOG' (128, purgeable) {
-	{ 50, 100, 368, 600 },
-	movableDBoxProc,
+	{ 0, 0, 250, 440 },
+	noGrowDocProc,
 	visible,
 	goAway,
 	0,
 	128,
-	"Preferences",
+	"MacHub",
 	centerMainScreen
 };
 
@@ -18,23 +18,17 @@ data 'dctb' (128, purgeable) {
 
 resource 'DITL' (128, purgeable) {
 	{
-		{ 10, 10, 30, 100 },
-		StaticText { enabled, "Accounts" };
-
-		{ 35, 10, 200+40, 200+10 },
+		{ 10, 15, 200+10, 180+10 },
 		UserItem { enabled };
 
-		{ 35, 220, 200+40, 200+220 },
+		{ 10, 205, 200+10, 205+220 },
 		UserItem { enabled };
 
-		{ 250, 10, 270, 110 },
+		{ 220, 14, 240, 114 },
 		Button { enabled, "Add Account" };
 
-		{ 250, 130, 270, 211 },
+		{ 220, 204, 240, 279 },
 		Button { enabled, "Remove" };
-
-		{ 285, 208-70, 305, 207 },
-		Button { enabled, "Done" };
 	}
 };
 
@@ -517,4 +511,29 @@ data 'PICT' (133, "bw-google") { /* gmail */
 	$"0155 57E0 00AA AFE0 0055 57E0 002A AFE0"            /* .UW..ª¯..UW..*¯. */
 	$"0015 57E0 000A AFE0 0005 577F FFFF FE00"            /* ..W...¯...W..... */
 	$"0000 0000 0000 0000 0000 0000 0000 00FF"            /* ................ */
+};
+
+resource 'ALRT' (134, purgeable ) {
+   { 0, 0, 110, 400 },
+   134,
+   {
+      OK, visible, silent,
+      OK, visible, silent,
+      OK, visible, silent,
+      OK, visible, silent
+   },
+   centerMainScreen
+};
+
+resource 'DITL' (134, purgeable) {
+	{
+		{ 76, 310, 76+20, 380 },
+		Button { enabled, "OK" };
+
+		{ 76, 224, 76+20, 294 },
+		Button { enabled, "Cancel" };
+
+		{8, 72, 70, 380},
+		StaticText { disabled, "Are you sure you want to remove this account?" };
+	}
 };
