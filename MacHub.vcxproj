@@ -102,6 +102,7 @@ xcopy *.APPL "C:\Users\AnthonySuper\OneDrive\Documents\Personal\Mac\Apps\Basilis
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Comms.cpp" />
     <ClCompile Include="IconListDef.cpp" />
     <ClCompile Include="Keys.cpp" />
     <ClCompile Include="MacHub.cpp" />
@@ -125,6 +126,7 @@ xcopy *.APPL "C:\Users\AnthonySuper\OneDrive\Documents\Personal\Mac\Apps\Basilis
     <None Include="weather-icons.r" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Comms.h" />
     <ClInclude Include="IconListDef.h" />
     <ClInclude Include="Keys.h" />
     <ClInclude Include="ModuleManager.h" />

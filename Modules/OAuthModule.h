@@ -42,8 +42,16 @@ protected:
 		OAuthStatus Status;
 	};
 
-	virtual AuthData GetAuthData() = 0;
-	virtual OAuthResponse QueryUserCode(AuthData authData) = 0;
+	AuthData _authData;
+
+	virtual void AuthDataRequest() = 0;
+	virtual void AuthDataResponse(HttpResponse response) = 0;
+	void DisplayAuthData(AuthData authData);
+
+	virtual void UserCodeRequest() = 0;
+	virtual void UserCodeResponse(HttpResponse response) = 0;
+	void DisplayUserCode(OAuthResponse response);
+
 	std::string GetResponseErrorMsg(HttpResponse response);
 
 private:
@@ -54,7 +62,6 @@ private:
 	};
 
 	UIState _uiState;
-	AuthData _authData;
 	void UpdateUI();
 	void CheckUserCode();
 	void EraseStatusText();

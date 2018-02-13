@@ -1,11 +1,13 @@
 #include <Dialogs.h>
 #include <string.h>
-#include <machttp/HttpClient.h>
 #include <json/json.h>
 #include "Google.h"
 #include "../Util.h"
 #include "../Prefs.h"
 #include "../Keys.h"
+#include "../Comms.h"
+
+using namespace std::placeholders;
 
 std::string Google::GetId()
 {
@@ -27,19 +29,21 @@ void Google::Update()
 	// TODO
 }
 
-OAuthModule::AuthData Google::GetAuthData()
+void Google::AuthDataRequest()
+{
+	// Set the lowest cipher suite that the server accepts to maximise performance
+	Comms::Http.SetCipherSuite(MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA);
+	
+	Comms::Http.Post("https://accounts.google.com/o/oauth2/device/code",
+		"client_id=" + Keys::GoogleClientId + "&scope=email%20profile",
+		std::bind(&Google::AuthDataResponse, this, _1));
+}
+
+void Google::AuthDataResponse(HttpResponse response)
 {
 	AuthData authData;
 	authData.Status = Error;
 	authData.ErrorMsg = "";
-
-	HttpClient httpClient("https://accounts.google.com");
-
-	// Set the lowest cipher suite that the server accepts to maximise performance
-	httpClient.SetCipherSuite(MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA);
-
-	HttpResponse response = httpClient.Post("/o/oauth2/device/code",
-		"client_id=" + Keys::GoogleClientId + "&scope=email%20profile");
 
 	if (response.Success)
 	{
@@ -67,69 +71,51 @@ OAuthModule::AuthData Google::GetAuthData()
 		authData.ErrorMsg = GetResponseErrorMsg(response);
 	}
 
-	return authData;
+	DisplayAuthData(authData);
 }
 
-OAuthModule::OAuthResponse Google::QueryUserCode(AuthData authData)
+void Google::UserCodeRequest()
+{
+	Comms::Http.SetCipherSuite(MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA);
+
+	Comms::Http.Post("https://www.googleapis.com/oauth2/v4/token",
+		"client_id=" + Keys::GoogleClientId +
+		"&client_secret=" + Keys::GoogleClientSecret +
+		"&code=" + _authData.Code +
+		"&grant_type=http://oauth.net/grant_type/device/1.0",
+		std::bind(&Google::UserCodeResponse, this, _1));
+}
+
+void Google::UserCodeResponse(HttpResponse response)
 {
 	OAuthResponse authResponse;
 	authResponse.Status = Error;
 	authResponse.ErrorMsg = "";
-
-	HttpClient httpClient("https://www.googleapis.com");
-	httpClient.SetCipherSuite(MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA);
-
-	HttpResponse response = httpClient.Post("/oauth2/v4/token",
-		"client_id=" + Keys::GoogleClientId +
-		"&client_secret=" + Keys::GoogleClientSecret +
-		"&code=" + authData.Code +
-		"&grant_type=http://oauth.net/grant_type/device/1.0");
 
 	if (response.Success)
 	{
 		Json::Value root;
 		Json::Reader reader;
 		bool parseSuccess = reader.parse(response.Content.c_str(), root);
-		
+
 		if (parseSuccess)
 		{
 			if (root.isMember("access_token"))
 			{
 				// Save access token to prefs
-				std::string accessToken = root["access_token"].asString();
-				std::string refreshToken = "";
+				_accessToken = root["access_token"].asString();
+				_refreshToken = "";
 
 				if (root.isMember("refresh_token"))
 				{
-					refreshToken = root["refresh_token"].asString();
+					_refreshToken = root["refresh_token"].asString();
 				}
 
 				// Get Google username to save to prefs
-				response = httpClient.Get("/oauth2/v1/userinfo?access_token=" + accessToken);
+				Comms::Http.Get("https://www.googleapis.com/oauth2/v1/userinfo?access_token=" + _accessToken,
+					std::bind(&Google::UsernameResponse, this, _1));
 
-				if (response.Success)
-				{
-					parseSuccess = reader.parse(response.Content.c_str(), root);
-
-					if (parseSuccess && root.isMember("name"))
-					{
-						std::string username = root["name"].asString();
-
-						authResponse.Status = Success;
-						authResponse.AccessToken = accessToken;
-						authResponse.RefreshToken = refreshToken;
-						authResponse.AccountName = username;
-					}
-					else if (root.isMember("error"))
-					{
-						std::string error = root["error"].asString();
-						authResponse.ErrorMsg = "Google returned error " + error + " when getting username.";
-					}
-				}
-				else
-				{
-					authResponse.ErrorMsg = GetResponseErrorMsg(response);
-				}
+				return;
 			}
 			else if (root.isMember("error"))
 			{
@@ -151,5 +137,40 @@ OAuthModule::OAuthResponse Google::QueryUserCode(AuthData authData)
 		authResponse.ErrorMsg = GetResponseErrorMsg(response);
 	}
 
-	return authResponse;
+	DisplayUserCode(authResponse);
+}
+
+void Google::UsernameResponse(HttpResponse response)
+{
+	OAuthResponse authResponse;
+	authResponse.Status = Error;
+	authResponse.ErrorMsg = "";
+
+	if (response.Success)
+	{
+		Json::Value root;
+		Json::Reader reader;
+		bool parseSuccess = reader.parse(response.Content.c_str(), root);
+
+		if (parseSuccess && root.isMember("name"))
+		{
+			std::string username = root["name"].asString();
+
+			authResponse.Status = Success;
+			authResponse.AccessToken = _accessToken;
+			authResponse.RefreshToken = _refreshToken;
+			authResponse.AccountName = username;
+		}
+		else if (root.isMember("error"))
+		{
+			std::string error = root["error"].asString();
+			authResponse.ErrorMsg = "Google returned error " + error + " when getting username.";
+		}
+	}
+	else
+	{
+		authResponse.ErrorMsg = GetResponseErrorMsg(response);
+	}
+
+	DisplayUserCode(authResponse);
 }

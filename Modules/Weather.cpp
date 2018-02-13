@@ -26,7 +26,7 @@ std::string Weather::GetName()
 void Weather::Init()
 {
 	HttpClient httpClient("http://api.wunderground.com");
-	HttpResponse response = httpClient.Get("/api/dfa099805aaf8fd9/conditions/q/AU/Melbourne.json");
+	/*HttpResponse response = httpClient.Get("/api/dfa099805aaf8fd9/conditions/q/AU/Melbourne.json");
 	
 	Json::Value root;
 	Json::Reader reader;
@@ -39,7 +39,7 @@ void Weather::Init()
 
 		_temp = curObs.get("temp_c", "--").asString();
 		_condition = curObs.get("weather", "--").asString();
-	}
+	}*/
 }
 
 void Weather::Update()

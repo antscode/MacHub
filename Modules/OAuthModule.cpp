@@ -1,10 +1,10 @@
 #include <Dialogs.h>
 #include <string.h>
-#include <machttp/HttpClient.h>
 #include <json/json.h>
 #include "OAuthModule.h"
 #include "../Util.h"
 #include "../Prefs.h"
+#include "../Comms.h"
 
 void OAuthModule::ShowPrefsDialog()
 {
@@ -15,7 +15,12 @@ void OAuthModule::ShowPrefsDialog()
 	_uiState = PleaseWait;
 	UpdateUI();
 
-	_authData = GetAuthData();
+	AuthDataRequest();
+}
+
+void OAuthModule::DisplayAuthData(AuthData authData)
+{
+	_authData = authData;
 
 	if (_authData.Status == Success)
 	{
@@ -111,6 +116,7 @@ void OAuthModule::HandlePrefsDialogEvent(EventRecord *eventPtr)
 		switch (item)
 		{
 			case 1:
+				Comms::Http.CancelRequest();
 				DisposeDialog(PrefsDialog);
 				PrefsDialog = 0;
 				break;
@@ -127,8 +133,11 @@ void OAuthModule::CheckUserCode()
 	_uiState = PleaseWait;
 	UpdateUI();
 
-	OAuthResponse response = QueryUserCode(_authData);
+	UserCodeRequest();
+}
 
+void OAuthModule::DisplayUserCode(OAuthResponse response)
+{
 	switch (response.Status)
 	{
 		case Success:
@@ -194,10 +203,10 @@ std::string OAuthModule::GetResponseErrorMsg(HttpResponse response)
 	{
 		err = "Server returned status code " + std::to_string(response.StatusCode) + ".";
 	}
-	else if (response.ErrorCode == ConnectionError)
+	/*else if (response.ErrorCode == ConnectionError)
 	{
 		err = "Could not connect to " + GetName() + ", please check your Internet connection.";
-	}
+	}*/
 	else
 	{
 		err = response.ErrorMsg;

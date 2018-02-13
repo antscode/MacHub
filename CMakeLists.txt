@@ -16,6 +16,7 @@ add_application(MacHub
 	Keys.cpp
 	IconListDef.cpp
 	ModuleManager.cpp
+	Comms.cpp
 	Modules/OAuthModule.cpp
 	Modules/Facebook.cpp
 	Modules/Google.cpp

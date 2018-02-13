@@ -13,8 +13,14 @@ public:
 	virtual void Update();
 
 protected:
-	virtual AuthData GetAuthData();
-	virtual OAuthResponse QueryUserCode(AuthData authData);
+	virtual void AuthDataRequest();
+	virtual void AuthDataResponse(HttpResponse response);
+	virtual void UserCodeRequest();
+	virtual void UserCodeResponse(HttpResponse response);
+	
+private:
+	std::string _userAccessToken;
+	virtual void UsernameResponse(HttpResponse response);
 };
 
 #endif // _FACEBOOK_

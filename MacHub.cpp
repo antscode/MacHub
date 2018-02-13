@@ -7,9 +7,11 @@
 #include <memory>
 #include "ModuleManager.h"
 #include "Prefs.h"
+#include "Comms.h"
 #include "Modules/Weather.h"
 #include "Modules/Facebook.h"
 #include "Modules/Google.h"
+#include "Util.h"
 
 void InitToolBox();
 void InitModules();
@@ -94,6 +96,10 @@ void EventLoop()
 		if (WaitNextEvent(everyEvent, &event, sleep, NULL))
 		{
 			DoEvent(&event);
+		}
+		else
+		{
+			Comms::Http.ProcessRequests();
 		}
 	}
 }

@@ -13,8 +13,15 @@ public:
 	virtual void Update();
 
 protected:
-	virtual AuthData GetAuthData();
-	virtual OAuthResponse QueryUserCode(AuthData authData);
+	virtual void AuthDataRequest();
+	virtual void AuthDataResponse(HttpResponse response);
+	virtual void UserCodeRequest();
+	virtual void UserCodeResponse(HttpResponse response);
+
+private:
+	std::string _accessToken;
+	std::string _refreshToken;
+	virtual void UsernameResponse(HttpResponse response);
 };
 
 #endif //_GOOGLE_

@@ -1,11 +1,13 @@
 #include <Dialogs.h>
 #include <string.h>
-#include <machttp/HttpClient.h>
 #include <json/json.h>
 #include "Facebook.h"
 #include "../Util.h"
 #include "../Prefs.h"
 #include "../Keys.h"
+#include "../Comms.h"
+
+using namespace std::placeholders;
 
 std::string Facebook::GetId()
 {
@@ -27,19 +29,21 @@ void Facebook::Update()
 	// TODO
 }
 
-OAuthModule::AuthData Facebook::GetAuthData()
+void Facebook::AuthDataRequest()
+{
+	// Set the lowest cipher suite that the server accepts to maximise performance
+	Comms::Http.SetCipherSuite(MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA);
+
+	Comms::Http.Post("https://graph.facebook.com/v2.6/device/login",
+		"access_token=" + Keys::FacebookAccessToken + "&scope=user_posts",
+		std::bind(&Facebook::AuthDataResponse, this, _1));
+}
+
+void Facebook::AuthDataResponse(HttpResponse response)
 {
 	AuthData authData;
 	authData.Status = Error;
 	authData.ErrorMsg = "";
-
-	HttpClient httpClient("https://graph.facebook.com");
-
-	// Set the lowest cipher suite that the server accepts to maximise performance
-	httpClient.SetCipherSuite(MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA);
-
-	HttpResponse response = httpClient.Post("/v2.6/device/login",
-		"access_token=" + Keys::FacebookAccessToken + "&scope=user_posts");
 
 	if (response.Success)
 	{
@@ -67,20 +71,23 @@ OAuthModule::AuthData Facebook::GetAuthData()
 		authData.ErrorMsg = GetResponseErrorMsg(response);
 	}
 
-	return authData;
+	DisplayAuthData(authData);
 }
 
-OAuthModule::OAuthResponse Facebook::QueryUserCode(AuthData authData)
+void Facebook::UserCodeRequest()
+{
+	Comms::Http.SetCipherSuite(MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA);
+
+	Comms::Http.Post("https://graph.facebook.com/v2.6/device/login_status",
+		"access_token=" + Keys::FacebookAccessToken + "&code=" + _authData.Code,
+		std::bind(&Facebook::UserCodeResponse, this, _1));
+}
+
+void Facebook::UserCodeResponse(HttpResponse response)
 {
 	OAuthResponse authResponse;
 	authResponse.Status = Error;
 	authResponse.ErrorMsg = "";
-
-	HttpClient httpClient("https://graph.facebook.com");
-	httpClient.SetCipherSuite(MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA);
-
-	HttpResponse response = httpClient.Post("/v2.6/device/login_status",
-		"access_token=" + Keys::FacebookAccessToken + "&code=" + authData.Code);
 
 	if (response.Success)
 	{
@@ -93,36 +100,13 @@ OAuthModule::OAuthResponse Facebook::QueryUserCode(AuthData authData)
 			if (root.isMember("access_token"))
 			{
 				// Save access token to prefs
-				std::string userAccessToken = root["access_token"].asString();
+				_userAccessToken = root["access_token"].asString();
 
 				// Get FB username to save to prefs
-				response = httpClient.Get("/v2.3/me?fields=name,picture&access_token=" + userAccessToken);
+				Comms::Http.Get("https://graph.facebook.com/v2.3/me?fields=name,picture&access_token=" + _userAccessToken,
+					std::bind(&Facebook::UsernameResponse, this, _1));
 
-				if (response.Success)
-				{
-					parseSuccess = reader.parse(response.Content.c_str(), root);
-
-					if (parseSuccess && root.isMember("name"))
-					{
-						std::string username = root["name"].asString();
-
-						authResponse.Status = Success;
-						authResponse.AccessToken = userAccessToken;
-						authResponse.RefreshToken = "";
-						authResponse.AccountName = username;
-					}
-					else if(root.isMember("error"))
-					{
-						const Json::Value error = root["error"];
-						int resCode = error["code"].asInt();
-
-						authResponse.ErrorMsg = "Facebook returned error code " + std::to_string(resCode) + " when gettng username.";
-					}
-				}
-				else
-				{
-					authResponse.ErrorMsg = GetResponseErrorMsg(response);
-				}
+				return;
 			}
 			else if (root.isMember("error"))
 			{
@@ -146,5 +130,42 @@ OAuthModule::OAuthResponse Facebook::QueryUserCode(AuthData authData)
 		authResponse.ErrorMsg = GetResponseErrorMsg(response);
 	}
 
-	return authResponse;
+	DisplayUserCode(authResponse);
+}
+
+void Facebook::UsernameResponse(HttpResponse response)
+{
+	OAuthResponse authResponse;
+	authResponse.Status = Error;
+	authResponse.ErrorMsg = "";
+
+	if (response.Success)
+	{
+		Json::Value root;
+		Json::Reader reader;
+		bool parseSuccess = reader.parse(response.Content.c_str(), root);
+
+		if (parseSuccess && root.isMember("name"))
+		{
+			std::string username = root["name"].asString();
+
+			authResponse.Status = Success;
+			authResponse.AccessToken = _userAccessToken;
+			authResponse.RefreshToken = "";
+			authResponse.AccountName = username;
+		}
+		else if (root.isMember("error"))
+		{
+			const Json::Value error = root["error"];
+			int resCode = error["code"].asInt();
+
+			authResponse.ErrorMsg = "Facebook returned error code " + std::to_string(resCode) + " when gettng username.";
+		}
+	}
+	else
+	{
+		authResponse.ErrorMsg = GetResponseErrorMsg(response);
+	}
+
+	DisplayUserCode(authResponse);
 }
