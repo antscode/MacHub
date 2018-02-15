@@ -110,7 +110,7 @@ void OAuthModule::HandlePrefsDialogEvent(EventRecord *eventPtr)
 {
 	short int item;
 	DialogRef dialogRef;
-
+	
 	if (DialogSelect(eventPtr, &dialogRef, &item))
 	{
 		switch (item)
@@ -203,10 +203,10 @@ std::string OAuthModule::GetResponseErrorMsg(HttpResponse response)
 	{
 		err = "Server returned status code " + std::to_string(response.StatusCode) + ".";
 	}
-	/*else if (response.ErrorCode == ConnectionError)
+	else if (response.ErrorCode == ConnectionError)
 	{
 		err = "Could not connect to " + GetName() + ", please check your Internet connection.";
-	}*/
+	}
 	else
 	{
 		err = response.ErrorMsg;
