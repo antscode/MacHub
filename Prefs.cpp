@@ -388,9 +388,9 @@ void Prefs::PopulateAccountList()
 
 void Prefs::RemoveAccount(short index)
 {
-	Json::Value* removed;
+	Json::Value removed;
 
-	Prefs::Data["accounts"].removeIndex(index, removed);
+	Prefs::Data["accounts"].removeIndex(index, &removed);
 	Prefs::Save();
 }
 

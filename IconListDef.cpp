@@ -84,6 +84,7 @@ extern "C"
 			DisposeRgn(savedClip);
 			SetPenState(&savedPenState);
 			TextFont(0);
+			TextSize(0);
 		}
 	}
 

@@ -203,6 +203,10 @@ std::string OAuthModule::GetResponseErrorMsg(HttpResponse response)
 	{
 		err = "Server returned status code " + std::to_string(response.StatusCode) + ".";
 	}
+	else if (response.ErrorCode == ConnectionTimeout)
+	{
+		err = "The connection timed out. Your CPU probably isn't fast enough to connect over SSL, sorry :(";
+	}
 	else if (response.ErrorCode == ConnectionError)
 	{
 		err = "Could not connect to " + GetName() + ", please check your Internet connection.";
