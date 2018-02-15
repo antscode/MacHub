@@ -124,6 +124,7 @@ void Util::DrawTextToWidth(std::string text, int width, int lineHeight, int newL
 void Util::FrameDefaultButton(DialogPtr dialog, short itemNo, bool active)
 {
 	DialogItemType type;
+	ControlRef control;
 	Handle itemH;
 	Rect box;
 
@@ -146,12 +147,12 @@ void Util::FrameDefaultButton(DialogPtr dialog, short itemNo, bool active)
 		FrameRoundRect(&box, 16, 16);
 		DisposePixPat(pp);
 		PenNormal();
-		DeactivateControl((ControlRef)itemH);
+		HiliteControl((ControlRef)itemH, 255);
 	}
 	else
 	{
 		FrameRoundRect(&box, 16, 16);
-		ActivateControl((ControlRef)itemH);
+		HiliteControl((ControlRef)itemH, 0);
 	}
 }
 

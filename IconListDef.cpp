@@ -4,125 +4,107 @@
 #include <Resources.h>
 #include "IconListDef.h"
 
-
 extern "C"
 {
-
-
-
-
-
-
-	pascal void MyLDEFInit(ListHandle theList)
+	pascal void IconListDef(short message, Boolean selected, Rect* cellRect, Cell cell, short dataOffset, short dataLen, ListHandle list)
 	{
-
-	}
-
-	pascal void MyLDEFHighlight(Boolean selected, Rect* cellRect, Cell theCell, short dataOffset, short dataLen, ListHandle theList)
-	{
-		// use color highlighting if possible
-		//BitClr((Ptr)LMGetHiliteMode(), pHiliteBit);
-		if (dataLen == sizeof(PicHandle))
+		switch (message)
 		{
-			MacInvertRect(cellRect); // highlight cell rectangle
+			case lDrawMsg:
+			case lHiliteMsg:
+				DrawCell(selected, cellRect, cell, dataOffset, dataLen, list);
+				break;
+			case lCloseMsg:
+				Dispose(list);
+				break;
 		}
 	}
 
-	pascal void MyLDEFDraw(Boolean selected, Rect* cellRect, Cell theCell, short dataOffset, short dataLen, ListHandle theList)
+	pascal void DrawCell(Boolean selected, Rect* cellRect, Cell cell, short dataOffset, short dataLen, ListHandle list)
 	{
-		GrafPtr savedPort; // old graphics port
-		RgnHandle savedClip; // old clip region
-		PenState savedPenState; // old pen state
+		const int cellWidth = 56;
+		const int iconSize = 32;
+		const int iconOffsetLeft = 12;
+		const int iconOffsetTop = 5;
 
-
-
-		PicHandle myPicture; // handle to a picture
-
-		// set up the drawing environment
-		GetPort(&savedPort); // remember the port
-		MacSetPort((**theList).port); // set port to list's port
-		savedClip = NewRgn(); // create new region
-		GetClip(savedClip); // set region to clip region
-		ClipRect(cellRect); // set clip region to cell 
-		//  rectangle
-		GetPenState(&savedPenState); // remember pen state
-		PenNormal(); // use normal pen type
-		// draw the cell if it contains data
-		EraseRect(cellRect); // erase before drawing
-
-		if (dataLen == sizeof(PicHandle))
+		if (dataLen == sizeof(ListIcon))
 		{
-			// get handle to picture
-			LGetCell(&myPicture, (short*)&dataLen, theCell, theList);
+			// Snapshot drawing environment
+			GrafPtr savedPort;
+			RgnHandle savedClip;
+			PenState savedPenState;
 
-			// draw the picture
-			DrawPicture(myPicture, cellRect);
+			GetPort(&savedPort); 
+			MacSetPort((**list).port);
+			savedClip = NewRgn();
+			GetClip(savedClip);
+			ClipRect(cellRect);
+			GetPenState(&savedPenState);
+
+			PenNormal();
+			EraseRect(cellRect);
+
+			ListIcon listIcon;
+			LGetCell(&listIcon, (short*)&dataLen, cell, list);
+
+			Rect iconRect;
+			MacSetRect(&iconRect, 
+				cellRect->left + iconOffsetLeft, 
+				cellRect->top + iconOffsetTop, 
+				cellRect->left + iconOffsetLeft + iconSize,
+				cellRect->top + iconOffsetTop + iconSize);
+
+			IconTransformType transform = ttNone;
+			short textMode = srcCopy;
+
+			if (selected) 
+			{
+				transform = ttSelected;
+				textMode = notSrcCopy;
+			}
+
+			// Draw the icon
+			PlotIconID(&iconRect, kAlignNone, transform, listIcon.recourceId);
+
+			// Draw the label
+			TextFont(1);
+			TextSize(9);
+
+			int labelWidth = StringWidth((ConstStr255Param)listIcon.label);
+			int startPos = (cellWidth - labelWidth) / 2;
+
+			MoveTo(cellRect->left + startPos, cellRect->top + 47);
+
+			TextMode(textMode);
+			DrawString((ConstStr255Param)listIcon.label);
+			
+			// Restore graphics environment
+			MacSetPort(savedPort);
+			SetClip(savedClip);
+			DisposeRgn(savedClip);
+			SetPenState(&savedPenState);
+			TextFont(0);
 		}
-
-
-
-
-		// select the cell if necessary
-		if (selected) //  highlight cell
-		{
-			MyLDEFHighlight(selected, cellRect, theCell, dataOffset,
-				dataLen, theList);
-		}
-
-		// restore graphics environment
-		MacSetPort(savedPort); // restore saved port
-		SetClip(savedClip); // restore clip region
-		DisposeRgn(savedClip); // free region memory
-		SetPenState(&savedPenState); // restore pen state
 	}
 
-
-
-	pascal void MyLDEFClose(ListHandle theList)
+	pascal void Dispose(ListHandle list)
 	{
-		Cell aCell; // cell in the list
-		PicHandle myPicHandle; // handle stored as cell data
-		int myDataLength; // length in bytes of cell data
+		Cell cell;
+		ListIcon listIcon;
+		int dataLength;
 
-		SetPt(&aCell, 0, 0);
-		if (MacPtInRect(aCell, &(**theList).dataBounds))
+		SetPt(&cell, 0, 0);
+		if (MacPtInRect(cell, &(**list).dataBounds))
 		{
 			do
 			{
-				// free memory only if cell's data is 4 bytes long
-				myDataLength = sizeof(PicHandle);
-				LGetCell(&myPicHandle, (short*)&myDataLength, aCell, theList);
-				if (myDataLength == sizeof(PicHandle))
-					KillPicture(myPicHandle);
-			} while (LNextCell(TRUE, TRUE, &aCell, theList));
+				dataLength = sizeof(ListIcon);
+				LGetCell(&listIcon, (short*)&dataLength, cell, list);
+				if (dataLength == sizeof(ListIcon))
+				{
+					delete &listIcon;
+				}
+			} while (LNextCell(true, true, &cell, list));
 		}
 	}
-
-	pascal void MyLDEF(short message, Boolean selected, Rect* cellRect, Cell theCell, short dataOffset, short dataLen, ListHandle theList)
-	{
-		//RETRO68_RELOCATE();
-		//Retro68Relocate();
-		//Retro68CallConstructors();
-
-		switch (message)
-		{
-		case lInitMsg:
-			MyLDEFInit(theList);
-			break;
-		case lDrawMsg:
-			MyLDEFDraw(selected, cellRect, theCell, dataOffset, dataLen, theList);
-			break;
-		case lHiliteMsg:
-			MyLDEFHighlight(selected, cellRect, theCell, dataOffset, dataLen, theList);
-			break;
-		case lCloseMsg:
-			MyLDEFClose(theList);
-			break;
-		}
-
-		//Retro68FreeGlobals();
-	}
-
-
-
 }

@@ -1,7 +1,7 @@
 #include "Dialogs.r"
 
 resource 'DLOG' (129, purgeable) {
-	{ 0, 0, 124, 320 },
+	{ 0, 0, 124, 340 },
 	movableDBoxProc,
 	visible,
 	goAway,
@@ -17,10 +17,10 @@ data 'dctb' (129, purgeable) {
 
 resource 'DITL' (129, purgeable) {
 	{
-		{ 90, 320-170, 90+20, 320-110 },
+		{ 90, 340-170, 90+20, 340-110 },
 		Button { enabled, "Cancel" };
 
-		{ 90, 320-10-80-4, 90+20, 320-10-4 },
+		{ 90, 340-10-80-4, 90+20, 340-10-4 },
 		Button { enabled, "Continue" };
 	}
 };

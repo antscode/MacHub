@@ -6,6 +6,7 @@
 #include <string>
 #include "Prefs.h"
 #include "Util.h"
+#include "IconListDef.h"
 
 Json::Value Prefs::Data = Get();
 
@@ -26,13 +27,13 @@ void Prefs::ShowWindow()
 
 	// Deactivate Add & Remove buttons by default
 	GetDialogItem(_dialog, 3, &type, &itemH, &box);
-	DeactivateControl((ControlRef)itemH);
+	HiliteControl((ControlRef)itemH, 255);
 	GetDialogItem(_dialog, 4, &type, &itemH, &box);
-	DeactivateControl((ControlRef)itemH);
+	HiliteControl((ControlRef)itemH, 255);
 
 	// Initialise lists
 	GetDialogItem(_dialog, 1, &type, &itemH, &box);
-	_allAccounts = CreateList(_dialog, box, 4, 128, 32, 32);
+	_allAccounts = CreateList(_dialog, box, 4, 128, 56, 56);
 	PopulateAccountList();
 
 	GetDialogItem(_dialog, 2, &type, &itemH, &box);
@@ -68,7 +69,7 @@ void Prefs::HandleEvent(EventRecord* eventPtr)
 				// Deactivate any user account selection
 				LSetSelect(false, LLastClick(_userAccounts), _userAccounts);
 				GetDialogItem(_dialog, 4, &type, &itemH, &box);
-				DeactivateControl((ControlRef)itemH);
+				HiliteControl((ControlRef)itemH, 255);
 
 				// Activate cell & add account button
 				bool dblClick = LClick(pt, 0, _allAccounts);
@@ -79,7 +80,7 @@ void Prefs::HandleEvent(EventRecord* eventPtr)
 				if (cellIndex < _manager->Modules.size() &&
 					!UserAccountExists(_manager->Modules[cellIndex]->GetId()))
 				{
-					ActivateControl((ControlRef)itemH);
+					HiliteControl((ControlRef)itemH, 0);
 
 					if (dblClick)
 					{
@@ -88,7 +89,7 @@ void Prefs::HandleEvent(EventRecord* eventPtr)
 				}
 				else
 				{
-					DeactivateControl((ControlRef)itemH);
+					HiliteControl((ControlRef)itemH, 255);
 				}
 				break;
 			}
@@ -101,7 +102,7 @@ void Prefs::HandleEvent(EventRecord* eventPtr)
 				// Deactivate any account selection
 				LSetSelect(false, LLastClick(_allAccounts), _allAccounts);
 				GetDialogItem(_dialog, 3, &type, &itemH, &box);
-				DeactivateControl((ControlRef)itemH);
+				HiliteControl((ControlRef)itemH, 255);
 
 				// Activate cell & remove account button
 				bool dblClick = LClick(pt, 0, _userAccounts);
@@ -111,11 +112,11 @@ void Prefs::HandleEvent(EventRecord* eventPtr)
 
 				if (cellIndex < Prefs::Data["accounts"].size())
 				{
-					ActivateControl((ControlRef)itemH);
+					HiliteControl((ControlRef)itemH, 0);
 				}
 				else
 				{
-					DeactivateControl((ControlRef)itemH);
+					HiliteControl((ControlRef)itemH, 255);
 				}
 				break;
 			}
@@ -140,7 +141,7 @@ void Prefs::HandleEvent(EventRecord* eventPtr)
 				}
 
 				GetDialogItem(_dialog, 4, &type, &itemH, &box);
-				DeactivateControl((ControlRef)itemH);
+				HiliteControl((ControlRef)itemH, 255);
 				break;
 			}
 		}
@@ -184,20 +185,21 @@ void Prefs::Activate(bool becomingActive)
 	Handle itemH;
 	Rect box;
 
+	MacSetPort(_dialog);
+
 	// Deactivate all selections
 	LSetSelect(false, LLastClick(_userAccounts), _userAccounts);
 	GetDialogItem(_dialog, 4, &type, &itemH, &box);
-	DeactivateControl((ControlRef)itemH);
+	HiliteControl((ControlRef)itemH, 255);
 
 	LSetSelect(false, LLastClick(_allAccounts), _allAccounts);
 	GetDialogItem(_dialog, 3, &type, &itemH, &box);
-	DeactivateControl((ControlRef)itemH);
+	HiliteControl((ControlRef)itemH, 255);
 
 	if (becomingActive)
 	{
 		// Refresh user account list
 		PopulateUserAccountList();
-		MacSetPort(_dialog);
 		InvalRect(&(*_userAccounts)->rView);
 	}
 }
@@ -345,16 +347,8 @@ void Prefs::PopulateUserAccountList()
 
 void Prefs::PopulateAccountList()
 {
-	Handle iconRes;
-	short resID;
-	ResType resType;
-	PicHandle picture;
-	Rect rect;
-	Rect plotRect;
-	Str255 resName;
 	int rowNum, colNum, icons, i = 0;
-	Cell cell;
-
+	
 	icons = _manager->Modules.size();
 	colNum = (**_allAccounts).dataBounds.right;
 	rowNum = (icons + (colNum - 1)) / colNum;
@@ -363,56 +357,33 @@ void Prefs::PopulateAccountList()
 
 	for (std::vector<std::unique_ptr<Module>>::iterator it = _manager->Modules.begin(); it != _manager->Modules.end(); ++it)
 	{
+		ListIcon listIcon;
+		Cell cell;
+
 		cell.v = i / colNum;
 		cell.h = i % colNum;
 
 		std::string moduleIcon = (*it)->GetId();
-
-		if (!Util::HasColour())
-		{
-			moduleIcon = "bw-" + moduleIcon;
-		}
+		std::string moduleLabel = " " + (*it)->GetName() + " ";
 
 		char* pModuleIcon;
 		pModuleIcon = (char *)Util::CtoPStr((char*)moduleIcon.c_str());
 
-		iconRes = GetNamedResource('PICT', (ConstStr255Param)pModuleIcon);
+		short resID;
+		Str255 resName;
+		ResType resType;
+		Handle iconRes = GetNamedResource('ICN#', (ConstStr255Param)pModuleIcon);
 		GetResInfo(iconRes, &resID, &resType, resName);
 
-		AddIconToList(rect, plotRect, cell, _allAccounts, picture, resID);
+		char* pLabel;
+		pLabel = (char*)Util::CtoPStr((char*)moduleLabel.c_str());
+
+		listIcon.recourceId = resID;
+		strncpy((char*)listIcon.label, pLabel, 256);
+
+		LSetCell(&listIcon, sizeof(ListIcon), cell, _allAccounts);
 		i++;
 	}
-}
-
-void Prefs::AddIconToList(
-	Rect cellRect, 
-	Rect plotRect, 
-	Cell cell, 
-	ListHandle list, 
-	PicHandle picHandle, 
-	int resID)
-{
-	Rect pictRect;
-	PicHandle picture;
-
-	const int iconWidth = 32;
-	const int iconHeight = 32;
-	const int extraSpace = 2; // extra space on top and to left of icon
-
-	// Picture occupies entire cell rectangle
-	MacSetRect(&cellRect, 0, 0, iconWidth + extraSpace, iconHeight + extraSpace);
-
-	// Plot icon over portion of rectangle
-	MacSetRect(&plotRect, extraSpace, extraSpace, iconWidth + extraSpace, iconHeight + extraSpace);
-
-	// Create the picture
-	picture = GetPicture(resID);
-	picHandle = OpenPicture(&cellRect);
-	DrawPicture(picture, &plotRect);
-	ClosePicture();
-
-	// Store handle to picture as cell data
-	LSetCell(&picHandle, sizeof(PicHandle), cell, list);
 }
 
 void Prefs::RemoveAccount(short index)

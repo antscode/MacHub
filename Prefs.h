@@ -34,13 +34,6 @@ private:
 	void DrawListBorder(ListHandle myList);
 	void PopulateAccountList();
 	void PopulateUserAccountList();
-	void AddIconToList(
-		Rect cellRect, 
-		Rect plotRect, 
-		Cell cell, 
-		ListHandle list, 
-		PicHandle picHandle, 
-		int resID);
 	void RemoveAccount(short index);
 	bool UserAccountExists(std::string type);
 };

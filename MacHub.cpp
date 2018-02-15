@@ -27,7 +27,7 @@ void HandleOSEvt(EventRecord *eventPtr);
 
 extern "C"
 {
-	extern pascal void MyLDEF(short message, Boolean selected, Rect* cellRect, Cell theCell, short dataOffset, short dataLen, ListHandle theList);
+	extern pascal void IconListDef(short message, Boolean selected, Rect* cellRect, Cell cell, short dataOffset, short dataLen, ListHandle list);
 }
 
 WindowRef _window;
@@ -232,5 +232,5 @@ void InitCustomLDEF()
 
 	Handle h = GetResource('LDEF', 128);
 	HLock(h);
-	*(ListDefProcPtr*)(*h + 6) = &MyLDEF;
+	*(ListDefProcPtr*)(*h + 6) = &IconListDef;
 }
